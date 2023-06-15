@@ -7,7 +7,7 @@ import func
 
 app = Flask(__name__)
 sub = Subscription()
-openapi = Openapi("b496f1c64a6b4e5c9d2aba9ac405cc25")
+openapi = Openapi("token")
 
 
 @app.route('/sub', methods=['POST'])
