@@ -49,9 +49,20 @@ def onMsgInstruction(event):
         key = func.getAPIKey(event["sender"]["senderId"])
         if key == "defaultAPIKEY":
             key = "你用的是默认APIKey"
-            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": key})
+            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": f"APIKey:{key}"})
         else:
-            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": key})
+            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {
+                "text": key,
+                "buttons": [
+                    [
+                        {
+                            "text": "隐藏APIKey",
+                            "actionType": 3,
+                            "value": f"APIKey{key}"
+                        }
+                    ]
+                ]
+            })
 
 
 @sub.onMessageNormal
@@ -118,7 +129,11 @@ def onBotFollowedHandler(event):
 
 @sub.onButtonReportInline
 def onButtonReportInlineHandler(event):
-    print(event)
+    if event["value"][0:6] == "APIKey":
+        key = event["value"][6:]
+        openapi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
+            "text": key[:8] + '*' * (len(key) - 12) + key[-4:]
+        })
 
 
 if __name__ == '__main__':
