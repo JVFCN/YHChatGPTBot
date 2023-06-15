@@ -1,5 +1,4 @@
 import json
-
 from flask import Flask, request
 from yunhu.subscription import Subscription
 from yunhu.openapi import Openapi
@@ -20,7 +19,8 @@ def subRoute():
 @sub.onMessageInstruction
 def onMsgInstruction(event):
     userIndex = -1
-    if event["message"]["commandId"] == 348:
+    cmdId = event["message"]["commandId"]
+    if cmdId == 348:
         if event["chat"]["chatType"] != "group":
             with open("userChatInfo.json", "r", encoding="UTF-8") as f:
                 jsonData = json.loads(f.read())
@@ -36,7 +36,22 @@ def onMsgInstruction(event):
                 jsonData.append(new)
                 with open("userChatInfo.json", "w", encoding="UTF-8") as f:
                     f.write(json.dumps(jsonData))
-        openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "私有APIKey设置成功"})
+            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "私有APIKey设置成功"})
+        else:
+            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "请在私聊设置"})
+    elif cmdId == 349:
+        imgUrl = func.getDALLEImg(event["message"]["content"]["text"], event["sender"]["senderId"])
+        if event["chat"]["chatType"] == "group":
+            openapi.sendMessage(event["chat"]["chatId"], "group", "image", {"imageUrl": imgUrl})
+        else:
+            openapi.sendMessage(event["sender"]["senderId"], "user", "image", {"imageUrl": imgUrl})
+    elif cmdId == 350:
+        key = func.getAPIKey(event["sender"]["senderId"])
+        if key == "defaultAPIKEY":
+            key = "你用的是默认APIKey"
+            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": key})
+        else:
+            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": key})
 
 
 @sub.onMessageNormal
@@ -46,9 +61,8 @@ def onMessageNormalHander(event):
     if senderType != "group":
         res = openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "Working..."})
         msgID = res.json()["data"]["messageInfo"]["msgId"]
-        userId = res.json()["data"]["messageInfo"]["recvId"]
 
-        GPTAnswer = func.getChatGPTAnswer_Test(text, event["sender"]["senderNickname"], userId)
+        GPTAnswer = func.getChatGPTAnswer(text, event["sender"]["senderId"])
         openapi.editMessage(msgID, event["sender"]["senderId"], "user", "text", {
             "text": f"[ChatGPT]:\n{GPTAnswer}",
             "buttons": [
@@ -67,7 +81,7 @@ def onMessageNormalHander(event):
             res = openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "Working..."})
 
             msgID = res.json()["data"]["messageInfo"]["msgId"]
-            GPTAnswer = func.getChatGPTAnswer(msg, userName)
+            GPTAnswer = func.getChatGPTAnswer(msg, event["sender"]["senderId"])
             openapi.editMessage(msgID, event["chat"]["chatId"], "group", "text", {
                 "text": f"@{userName} ​[ChatGPT]:\n{GPTAnswer}",
                 "buttons": [
@@ -96,13 +110,16 @@ def onGroupLeaveHandler(event):
 
 @sub.onBotFollowed
 def onBotFollowedHandler(event):
-    # print(event)
     welcome = func.getChatGPTAnswer(
         f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
         event["userId"])
     openapi.sendMessage(event["chatId"], "user", "markdown", {"text": welcome})
-    # print(welcome)
+
+
+@sub.onButtonReportInline
+def onButtonReportInlineHandler(event):
+    print(event)
 
 
 if __name__ == '__main__':
-    app.run("0.0.0.0", 7888)
+    app.run("127.0.0.1", 7888)
