@@ -39,13 +39,13 @@ def onMsgInstruction(event):
             openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "私有APIKey设置成功"})
         else:
             openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "请在私聊设置"})
-    elif cmdId == 349:
+    elif cmdId == 352:
         imgUrl = func.getDALLEImg(event["message"]["content"]["text"], event["sender"]["senderId"])
         if event["chat"]["chatType"] == "group":
             openapi.sendMessage(event["chat"]["chatId"], "group", "image", {"imageUrl": imgUrl})
         else:
             openapi.sendMessage(event["sender"]["senderId"], "user", "image", {"imageUrl": imgUrl})
-    elif cmdId == 350:
+    elif cmdId == 351:
         key = func.getAPIKey(event["sender"]["senderId"])
         if key == "defaultAPIKEY":
             key = "你用的是默认APIKey"
