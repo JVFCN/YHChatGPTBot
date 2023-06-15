@@ -43,4 +43,8 @@ openai.proxy键入你的代理IP, 如果你用的是Clash, 那么默认端口是
 打开云湖, 找到你创建的机器人  
 发送消息进行测试, 如果机器人成功回复, 那么代表机器人部署成功  
 
+赞助:  
+<img src=https://github.com/JVFCN/YHChatGPTBot/assets/120922114/985914bb-fa41-4c7a-a45b-5dbff301ac8b width=60% />
+
+
 [云湖官网](https://wwww.yhchat.com)
