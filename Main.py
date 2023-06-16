@@ -6,7 +6,7 @@ import func
 
 app = Flask(__name__)
 sub = Subscription()
-openapi = Openapi("token")
+openapi = Openapi("xxx")
 
 
 @app.route('/sub', methods=['POST'])
@@ -20,6 +20,8 @@ def subRoute():
 def onMsgInstruction(event):
     userIndex = -1
     cmdId = event["message"]["commandId"]
+    cmdName = event["message"]["commandName"]
+
     if cmdId == 348:
         if event["chat"]["chatType"] != "group":
             with open("userChatInfo.json", "r", encoding="UTF-8") as f:
@@ -39,13 +41,13 @@ def onMsgInstruction(event):
             openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "私有APIKey设置成功"})
         else:
             openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "请在私聊设置"})
-    elif cmdId == 352:
+    elif cmdId == 352 or cmdName == "AI生成图像":
         imgUrl = func.getDALLEImg(event["message"]["content"]["text"], event["sender"]["senderId"])
         if event["chat"]["chatType"] == "group":
             openapi.sendMessage(event["chat"]["chatId"], "group", "image", {"imageUrl": imgUrl})
         else:
             openapi.sendMessage(event["sender"]["senderId"], "user", "image", {"imageUrl": imgUrl})
-    elif cmdId == 351:
+    elif cmdId == 353 or cmdName == "查看APIKey":
         key = func.getAPIKey(event["sender"]["senderId"])
         if key == "defaultAPIKEY":
             key = "你用的是默认APIKey"
@@ -63,6 +65,18 @@ def onMsgInstruction(event):
                     ]
                 ]
             })
+    elif cmdId == 353 or cmdName == "更改默认APIKey":
+        if event["message"]["content"]["text"][:6] != "jin328":
+            if event["chat"]["chatType"] != "group":
+                openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "密码错误"})
+            else:
+                openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "密码错误"})
+        else:
+            if event["chat"]["chatType"] != "group":
+                func.setdefaultAPIKEY(event["message"]["content"]["text"][6:])
+                openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "默认APIKey设置成功"})
+            else:
+                openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "请在私聊设置默认APIKey"})
 
 
 @sub.onMessageNormal

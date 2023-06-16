@@ -1,9 +1,32 @@
-from datetime import datetime
+import os
+import threading
+import time
 import openai
 import json
 
-defaultAPIKEY = "sk-xxx"
-openai.proxy = "xxx"
+defaultAPIKEY = ""
+
+
+def scheduler():
+    while True:
+        global defaultAPIKEY
+        if os.path.exists("./defaultSet.json"):
+            with open("./defaultSet.json", "r", encoding="UTF-8") as f:
+                jsonData = json.loads(f.read())
+        else:
+            with open("./defaultSet.json", "w", encoding="UTF-8") as f:
+                jstr = {"defaultAPIKEY": "Key"}
+                json.dump(jstr, f)
+            with open("./defaultSet.json", "r", encoding="UTF-8") as f:
+                jsonData = json.loads(f.read())
+
+        defaultAPIKEY = jsonData["defaultAPIKEY"]
+        time.sleep(5)
+
+
+thread = threading.Thread(target=scheduler)
+thread.start()
+openai.proxy = "127.0.0.1:23144"
 
 
 def find_username(string):
@@ -55,6 +78,8 @@ def getChatGPTAnswer(msg, userId):
     except openai.error.OpenAIError as e:
         if e.http_status == 429:
             return "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"
+        elif e.http_status == 401:
+            return "APIKey错误"
 
 
 def getDALLEImg(prompt, userId):
@@ -100,3 +125,12 @@ def getAPIKey(userId):
                     return i["KEY"]
     else:
         return "null"
+
+
+def setdefaultAPIKEY(Key):
+    global defaultAPIKEY
+    defaultAPIKEY = Key
+
+    with open("./defaultSet.json", "w", encoding="UTF-8") as f:
+        jstr = {"defaultAPIKEY": Key}
+        json.dump(jstr, f)
