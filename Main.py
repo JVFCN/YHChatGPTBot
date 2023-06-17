@@ -77,6 +77,14 @@ def onMsgInstruction(event):
                 openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "默认APIKey设置成功"})
             else:
                 openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "请在私聊设置默认APIKey"})
+    elif cmdId == 355 or cmdName == "添加期望功能":
+        if event["chat"]["chatType"] != "group":
+            openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "添加成功"})
+        else:
+            openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "添加成功"})
+        openapi.sendMessage("3161064", "user", "text", {
+            "text": f"用户{event['sender']['senderId']}, 昵称:{event['sender']['senderNickname']}\n添加了期望功能:\n{event['message']['content']['text']}"
+        })
 
 
 @sub.onMessageNormal
