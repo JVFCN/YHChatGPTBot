@@ -1,12 +1,15 @@
 import json
+import os
 from flask import Flask, request
 from yunhu.subscription import Subscription
 from yunhu.openapi import Openapi
 import func
+import dotenv
+dotenv.load_dotenv()
 
 app = Flask(__name__)
 sub = Subscription()
-openapi = Openapi("xxx")
+openapi = Openapi(os.getenv("TOKEN"))
 
 
 @app.route('/sub', methods=['POST'])
@@ -47,7 +50,7 @@ def onMsgInstruction(event):
             openapi.sendMessage(event["chat"]["chatId"], "group", "image", {"imageUrl": imgUrl})
         else:
             openapi.sendMessage(event["sender"]["senderId"], "user", "image", {"imageUrl": imgUrl})
-    elif cmdId == 353 or cmdName == "查看APIKey":
+    elif cmdId == 351 or cmdName == "查看APIKey":
         key = func.getAPIKey(event["sender"]["senderId"])
         if key == "defaultAPIKEY":
             key = "你用的是默认APIKey"
@@ -78,6 +81,7 @@ def onMsgInstruction(event):
             else:
                 openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "请在私聊设置默认APIKey"})
     elif cmdId == 355 or cmdName == "添加期望功能":
+        # print(event)
         if event["chat"]["chatType"] != "group":
             openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "添加成功"})
         else:

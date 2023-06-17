@@ -3,7 +3,9 @@ import threading
 import time
 import openai
 import json
+import dotenv
 
+dotenv.load_dotenv()
 defaultAPIKEY = ""
 
 
@@ -26,7 +28,7 @@ def scheduler():
 
 thread = threading.Thread(target=scheduler)
 thread.start()
-openai.proxy = "127.0.0.1:23144"
+openai.proxy = os.getenv("PROXY")
 
 
 def find_username(string):
