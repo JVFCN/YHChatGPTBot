@@ -29,19 +29,19 @@ pip3 install yunhu
 搞一台服务器(或者内网穿透)  
 在[云湖官网控制台](https://www.yhchat.com/control)中新建一个机器人  
 在`配置消息订阅接口`输入框中键入你的公网IP或域名并在最后加上:端口/sub  
-如:6.6.6.6:12345/sub  
+如:6.6.6.6:12345/sub
 
-复制你的机器人Toekn, 在Main.py文件中的这一行`openapi = Openapi("token")`把token换成你复制的Token  
-在func.py中的这两行:  
+请在机器人根目录创建一个.env文件,并写入
 ```
-defaultAPIKEY = "sk-xxx"
-openai.proxy = "xxx"
+TOKEN=你的云湖机器人TOKEN
+PROXY=你的OpenAI代理
 ```
-把defaultAPIKey换成你的OpenAi APIKey, 这将是用户默认的APIKey  
 
-openai.proxy键入你的代理IP, 如果你用的是Clash, 那么默认端口是7890, 也就是127.0.0.1:7890(请使用非亚洲代理)  
+proxy键入你的代理IP, 如果你用的是Clash, 那么默认端口是7890, 也就是127.0.0.1:7890(请使用非亚洲代理)  
+在云湖官网把你的机器人添加相应的指令
 然后运行  
 打开云湖, 找到你创建的机器人  
+使用`设置默认APIKey命令`,设置用户的默认APIKey  
 发送消息进行测试, 如果机器人成功回复, 那么代表机器人部署成功  
 
 赞助:  
