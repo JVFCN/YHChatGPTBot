@@ -82,7 +82,6 @@ def onMsgInstruction(event):
             else:
                 openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "请在私聊设置默认APIKey"})
     elif cmdId == 355 or cmdName == "添加期望功能":
-        # print(event)
         if event["chat"]["chatType"] != "group":
             openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "添加成功"})
         else:
@@ -99,18 +98,7 @@ def onMessageNormalHander(event):
     if senderType != "group":
         res = openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "Working..."})
         msgID = res.json()["data"]["messageInfo"]["msgId"]
-
         func.getChatGPTAnswer(text, event["sender"]["senderId"], msgID)
-        # openapi.editMessage(msgID, event["sender"]["senderId"], "user", "text", {
-        #     "text": f"[ChatGPT]:\n{GPTAnswer}",
-        #     "buttons": [
-        #         {
-        #             "text": "复制回答",
-        #             "actionType": 2,
-        #             "value": GPTAnswer
-        #         }
-        #     ]
-        # })
     elif senderType == "group":
         name = func.find_username(text)
         if name == "bot" or name == "ChatGPTBot" or name == "gpt" or name == "GPT":

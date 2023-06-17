@@ -8,6 +8,7 @@ import dotenv
 
 dotenv.load_dotenv()
 defaultAPIKEY = ""
+openapi = Openapi(os.getenv("TOKEN"))
 
 
 def scheduler():
@@ -77,7 +78,7 @@ def getChatGPTAnswer(msg, userId, msgId):
             stream=True
         )
 
-        SendMsg = "[ChatGPT]:"
+        SendMsg = "[ChatGPT]:\n"
         num = 0
         for chunk in completion:
             chunk_msg = chunk['choices'][0]['delta'].get('content')
@@ -87,13 +88,9 @@ def getChatGPTAnswer(msg, userId, msgId):
                     continue
                 else:
                     SendMsg += chunk_msg
-                    print(SendMsg)
-                    Openapi.editMessage(msgId, userId, "user", "text", {
+                    openapi.editMessage(msgId, userId, "user", "text", {
                         "text": SendMsg
                     })
-        # chat_response = completion
-        # answer = chat_response.choices[0].message.content
-        # return answer
     except openai.error.OpenAIError as e:
         if e.http_status == 429:
             return "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"
