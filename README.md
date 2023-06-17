@@ -24,6 +24,7 @@
 ```
 pip3 install flask
 pip3 install yunhu
+pip3 install python-dotenv
 ```
 
 搞一台服务器(或者内网穿透)  
