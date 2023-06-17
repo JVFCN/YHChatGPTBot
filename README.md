@@ -20,11 +20,9 @@
 
 部署:
 首先确保机器人路径下有`userChatInfo.json`文件,否则机器人**不能正常运行**  
-安装云湖官方的PythonSDK和Flask  
+安装依赖  
 ```
-pip3 install flask
-pip3 install yunhu
-pip3 install python-dotenv
+pip3 install -r requirements.txt
 ```
 
 搞一台服务器(或者内网穿透)  
