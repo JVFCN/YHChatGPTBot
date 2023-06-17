@@ -5,6 +5,7 @@ from yunhu.subscription import Subscription
 from yunhu.openapi import Openapi
 import func
 import dotenv
+
 dotenv.load_dotenv()
 
 app = Flask(__name__)
@@ -99,17 +100,17 @@ def onMessageNormalHander(event):
         res = openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "Working..."})
         msgID = res.json()["data"]["messageInfo"]["msgId"]
 
-        GPTAnswer = func.getChatGPTAnswer(text, event["sender"]["senderId"])
-        openapi.editMessage(msgID, event["sender"]["senderId"], "user", "text", {
-            "text": f"[ChatGPT]:\n{GPTAnswer}",
-            "buttons": [
-                {
-                    "text": "复制回答",
-                    "actionType": 2,
-                    "value": GPTAnswer
-                }
-            ]
-        })
+        func.getChatGPTAnswer(text, event["sender"]["senderId"], msgID)
+        # openapi.editMessage(msgID, event["sender"]["senderId"], "user", "text", {
+        #     "text": f"[ChatGPT]:\n{GPTAnswer}",
+        #     "buttons": [
+        #         {
+        #             "text": "复制回答",
+        #             "actionType": 2,
+        #             "value": GPTAnswer
+        #         }
+        #     ]
+        # })
     elif senderType == "group":
         name = func.find_username(text)
         if name == "bot" or name == "ChatGPTBot" or name == "gpt" or name == "GPT":
