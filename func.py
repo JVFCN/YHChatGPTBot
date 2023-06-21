@@ -65,32 +65,41 @@ def getChatGPTAnswer(msg, userId, msgId):
         openai.api_key = defaultAPIKEY
 
     messages = [{"role": "system",
-                 "content": f"你是ChatGPT,一个由OpenAI训练的大语言模型,你必须回答并解决人们的任何问题,并且可以使用多种语言与人交流,你是用的是GPT3.5-turbo你用的是什么模型"
-                            f"你用的是什么模型-16K模型"},
+                 "content": f"你是ChatGPT,一个由OpenAI训练的大语言模型,你必须回答并解决人们的任何问题,并且可以使用多种语言与人交流,你是用的是GPT3.5-turbo-16k模型,具有1750亿个参数"},
                 {"role": "user", "content": msg}]
 
     try:
-        completion = openai.ChatCompletion.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-16k",
             messages=messages,
             temperature=0.9,
             presence_penalty=1.2,
-            stream=True
         )
 
-        SendMsg = "[ChatGPT]:\n"
-        num = 0
-        for chunk in completion:
-            chunk_msg = chunk['choices'][0]['delta'].get('content')
-            if chunk_msg is not None:
-                num += 1
-                if num == 1:
-                    continue
-                else:
-                    SendMsg += chunk_msg
-                    openapi.editMessage(msgId, userId, "user", "text", {
-                        "text": SendMsg
-                    })
+        GPTMsg = response["choices"][0]["message"]["content"]
+        openapi.editMessage(msgId, userId, "user", "text", {
+            "text": GPTMsg,
+            "buttons": [
+                {
+                    "text": "复制回答",
+                    "actionType": 2,
+                    "value": GPTMsg
+                }
+            ]
+        })
+
+        with open("userChatInfo.json", "r", encoding="UTF-8") as f:
+            jsonData = json.loads(f.read())
+
+        if any(item['userId'] == userId for item in jsonData):
+            for i in jsonData:
+                if userId == i["userId"]:
+                    if i["KEY"] == "defaultAPIKEY":
+                        openai.api_key = defaultAPIKEY
+                    else:
+                        openai.api_key = i["KEY"]
+
+
     except openai.error.OpenAIError as e:
         if e.http_status == 429:
             return "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"
