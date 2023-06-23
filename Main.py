@@ -130,7 +130,8 @@ def onGroupLeaveHandler(event):
 
 @sub.onBotFollowed
 def onBotFollowedHandler(event):
-    msg = openapi.sendMessage(event["chatId"], "user", "markdown", {"text": "Working..."})
+    print(event)
+    msg = openapi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
     msgID = msg.json()["data"]["messageInfo"]["msgId"]
 
     func.getChatGPTAnswer(
