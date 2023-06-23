@@ -46,7 +46,7 @@ def find_username(string):
         return None
 
 
-def getChatGPTAnswer(msg, userId, msgId):
+def getChatGPTAnswer(msg, userId, msgId, ChatType):
     with open("userChatInfo.json", "r", encoding="UTF-8") as f:
         jsonData = json.loads(f.read())
 
@@ -77,7 +77,7 @@ def getChatGPTAnswer(msg, userId, msgId):
         )
 
         GPTMsg = response["choices"][0]["message"]["content"]
-        openapi.editMessage(msgId, userId, "user", "text", {
+        openapi.editMessage(msgId, userId, ChatType, "text", {
             "text": GPTMsg,
             "buttons": [
                 {
@@ -87,17 +87,6 @@ def getChatGPTAnswer(msg, userId, msgId):
                 }
             ]
         })
-
-        with open("userChatInfo.json", "r", encoding="UTF-8") as f:
-            jsonData = json.loads(f.read())
-
-        if any(item['userId'] == userId for item in jsonData):
-            for i in jsonData:
-                if userId == i["userId"]:
-                    if i["KEY"] == "defaultAPIKEY":
-                        openai.api_key = defaultAPIKEY
-                    else:
-                        openai.api_key = i["KEY"]
 
 
     except openai.error.OpenAIError as e:
