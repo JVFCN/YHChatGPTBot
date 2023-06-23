@@ -115,7 +115,7 @@ def onGroupJoinHandler(event):
     msgID = msg.json()["data"]["messageInfo"]["msgId"]
 
     func.getChatGPTAnswer(f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
-                          event["userId"], msgID, "group")
+                          event["chatId"], msgID, "group")
 
 
 @sub.onGroupLeave
@@ -124,7 +124,7 @@ def onGroupLeaveHandler(event):
     msgID = msg.json()["data"]["messageInfo"]["msgId"]
 
     func.getChatGPTAnswer(
-        f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员", event["userId"], msgID,
+        f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员", event["chatId"], msgID,
         "group")
 
 
