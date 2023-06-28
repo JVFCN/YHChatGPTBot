@@ -35,6 +35,7 @@ pip3 install -r requirements.txt
 ```
 TOKEN=你的云湖机器人TOKEN
 PROXY=你的OpenAI代理
+DEFAULT_API=用户默认的APIKey
 ```
 
 proxy键入你的代理IP, 如果你用的是Clash, 那么默认端口是7890, 也就是127.0.0.1:7890(请使用非亚洲代理)  
