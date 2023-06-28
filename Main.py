@@ -33,7 +33,7 @@ def onMsgInstruction(event):
         else:
             openapi.sendMessage(senderId, "user", "text", {"text": "请在私聊设置"})
     elif cmdId == 352 or cmdName == "AI生成图像":
-        imgUrl = func.getDALLEImg(event["message"]["content"]["text"], event["sender"]["senderId"])
+        imgUrl = func.getDALLEImg(senderText["text"], senderId)
         if event["chat"]["chatType"] == "group":
             if imgUrl[:6] == "错误,请重试":
                 openapi.sendMessage(event["chat"]["chatId"], "group", "text", {imgUrl})
@@ -70,7 +70,7 @@ def onMsgInstruction(event):
                 openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "密码错误"})
         else:
             if event["chat"]["chatType"] != "group":
-                func.setdefaultAPIKEY(event["message"]["content"]["text"][6:])
+                func.setdefaultAPIKEY(senderText[6:])
                 openapi.sendMessage(senderId, "user", "text", {"text": "默认APIKey设置成功"})
             else:
                 openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "请在私聊设置默认APIKey"})
@@ -80,7 +80,7 @@ def onMsgInstruction(event):
         else:
             openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "添加成功"})
         openapi.sendMessage("3161064", "user", "text", {
-            "text": f"用户{event['sender']['senderId']}, 昵称:{event['sender']['senderNickname']}\n添加了期望功能:\n{event['message']['content']['text']}"
+            "text": f"用户{senderId}, 昵称:{event['sender']['senderNickname']}\n添加了期望功能:\n{senderText}"
         })
     elif cmdId == 371 or cmdName == "重置APIKey":
         func.update_api_key(senderId, func.defaultAPIKEY)
@@ -109,6 +109,7 @@ def onMessageNormalHander(event):
 
 @sub.onGroupJoin
 def onGroupJoinHandler(event):
+    func.add_user()
     msg = openapi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
     msgID = msg.json()["data"]["messageInfo"]["msgId"]
 
@@ -128,7 +129,6 @@ def onGroupLeaveHandler(event):
 
 @sub.onBotFollowed
 def onBotFollowedHandler(event):
-    func.add_user(event["userId"])
     msg = openapi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
     msgID = msg.json()["data"]["messageInfo"]["msgId"]
 
