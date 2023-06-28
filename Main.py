@@ -144,6 +144,10 @@ def onButtonReportInlineHandler(event):
         openapi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
             "text": key[:8] + '*' * (len(key) - 12) + key[-4:]
         })
+    elif event["value"][0:3] == "fan":
+        func.getChatGPTAnswer(
+            f"'{event['value'][3:]}'\n上面这段话是什么语言\n如果不是中文，请直接给出中文翻译\n如果是中文，请直接进行润色",
+            event["recvId"], event["msgId"], event["recvType"])
 
 
 if __name__ == '__main__':

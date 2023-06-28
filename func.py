@@ -38,8 +38,7 @@ def find_username(string):
 def update_api_key(user_id, new_api_key):
     connection = get_db_connection()
     cursor = connection.cursor()
-    print(new_api_key)
-    print(user_id)
+
     cursor.execute(
         "UPDATE user_chat_info SET api_key = ? WHERE userId = ?",
         (new_api_key, user_id)
@@ -86,7 +85,7 @@ def getChatGPTAnswer(msg, userId, msgId, ChatType):
                 {
                     "text": "翻译/润色",
                     "actionType": 3,
-                    "value": GPTMsg
+                    "value": f"fan{GPTMsg}"
                 }
             ]
         })
@@ -135,13 +134,11 @@ def get_api_key(userId):
     cursor.execute("SELECT api_key FROM user_chat_info WHERE userId = ?", (userId,))
     result = cursor.fetchone()
 
-    print(result)
     if result:
         return result[0]
 
 
 def setdefaultAPIKEY(Key):
-    print(Key)
     dotenv.set_key(".env", "DEFAULT_API", Key)
     global defaultAPIKEY
     defaultAPIKEY = Key
