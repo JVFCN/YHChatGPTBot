@@ -2,34 +2,23 @@ import os
 import threading
 import time
 import openai
-import json
 from yunhu.openapi import Openapi
 import dotenv
+import sqlite3
 
 dotenv.load_dotenv()
-defaultAPIKEY = ""
+defaultAPIKEY = os.getenv("DEFAULT_API")
 openapi = Openapi(os.getenv("TOKEN"))
+thread_local = threading.local()
+connection = sqlite3.connect("Yunhu.db")
+cursor = connection.cursor()
 
-
-def scheduler():
-    while True:
-        global defaultAPIKEY
-        if os.path.exists("./defaultSet.json"):
-            with open("./defaultSet.json", "r", encoding="UTF-8") as f:
-                jsonData = json.loads(f.read())
-        else:
-            with open("./defaultSet.json", "w", encoding="UTF-8") as f:
-                jstr = {"defaultAPIKEY": "Key"}
-                json.dump(jstr, f)
-            with open("./defaultSet.json", "r", encoding="UTF-8") as f:
-                jsonData = json.loads(f.read())
-
-        defaultAPIKEY = jsonData["defaultAPIKEY"]
-        time.sleep(5)
-
-
-thread = threading.Thread(target=scheduler)
-thread.start()
+cursor.execute(
+    "CREATE TABLE IF NOT EXISTS user_chat_info ("
+    "userId INTEGER PRIMARY KEY,"
+    "api_key TEXT NOT NULL DEFAULT 'defaultAPIKEY')"
+)
+connection.commit()
 openai.proxy = os.getenv("PROXY")
 
 
@@ -46,34 +35,43 @@ def find_username(string):
         return None
 
 
+def update_api_key(user_id, new_api_key):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    print(new_api_key)
+    print(user_id)
+    cursor.execute(
+        "UPDATE user_chat_info SET api_key = ? WHERE userId = ?",
+        (new_api_key, user_id)
+    )
+    connection.commit()
+
+
+def add_user(user_id):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute(
+        "INSERT OR IGNORE INTO user_chat_info (userId, api_key) VALUES (?, ?)",
+        (user_id, "defaultAPIKEY")
+    )
+    connection.commit()
+
+
 def getChatGPTAnswer(msg, userId, msgId, ChatType):
-    with open("userChatInfo.json", "r", encoding="UTF-8") as f:
-        jsonData = json.loads(f.read())
-
-    if any(item['userId'] == userId for item in jsonData):
-        for i in jsonData:
-            if userId == i["userId"]:
-                if i["KEY"] == "defaultAPIKEY":
-                    openai.api_key = defaultAPIKEY
-                else:
-                    openai.api_key = i["KEY"]
-    else:
-        new = {"userId": userId, "KEY": "defaultAPIKEY"}
-        jsonData.append(new)
-        with open("userChatInfo.json", "w", encoding="UTF-8") as f:
-            f.write(json.dumps(jsonData))
+    api_key = get_api_key(userId)
+    if api_key == "defaultAPIKEY":
         openai.api_key = defaultAPIKEY
-
+    else:
+        openai.api_key = api_key
     messages = [{"role": "system",
-                 "content": f"你是ChatGPT,一个由OpenAI训练的大语言模型,你必须回答并解决人们的任何问题,并且可以使用多种语言与人交流,你是用的是GPT3.5-turbo-16k模型,具有1750亿个参数"},
+                 "content": f"You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: "
+                            f"2021-09\nCurrent date: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"},
                 {"role": "user", "content": msg}]
-
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-16k",
             messages=messages,
-            temperature=0.9,
-            presence_penalty=1.2,
+            temperature=1,
         )
 
         GPTMsg = response["choices"][0]["message"]["content"]
@@ -84,6 +82,11 @@ def getChatGPTAnswer(msg, userId, msgId, ChatType):
                     "text": "复制回答",
                     "actionType": 2,
                     "value": GPTMsg
+                },
+                {
+                    "text": "翻译/润色",
+                    "actionType": 3,
+                    "value": GPTMsg
                 }
             ]
         })
@@ -91,28 +94,21 @@ def getChatGPTAnswer(msg, userId, msgId, ChatType):
 
     except openai.error.OpenAIError as e:
         if e.http_status == 429:
-            return "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"
+            openapi.editMessage(msgId, userId, ChatType, "text",
+                                {"text": "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"})
         elif e.http_status == 401:
-            return "APIKey错误"
+            openapi.editMessage(msgId, userId, ChatType, "text", {"text": "APIKey错误"})
+
+        else:
+            openapi.editMessage(msgId, userId, ChatType, "text", {"text": "未知错误, 请重试"})
 
 
 def getDALLEImg(prompt, userId):
-    with open("userChatInfo.json", "r", encoding="UTF-8") as f:
-        jsonData = json.loads(f.read())
-
-    if any(item['userId'] == userId for item in jsonData):
-        for i in jsonData:
-            if userId == i["userId"]:
-                if i["KEY"] == "defaultAPIKEY":
-                    openai.api_key = defaultAPIKEY
-                else:
-                    openai.api_key = i["KEY"]
-    else:
-        new = {"userId": userId, "KEY": "defaultAPIKEY"}
-        jsonData.append(new)
-        with open("userChatInfo.json", "w", encoding="UTF-8") as f:
-            f.write(json.dumps(jsonData))
+    api_key = get_api_key(userId)
+    if api_key == "defaultAPIKEY":
         openai.api_key = defaultAPIKEY
+    else:
+        openai.api_key = api_key
 
     try:
         response = openai.Image.create(
@@ -123,28 +119,38 @@ def getDALLEImg(prompt, userId):
         image_url = response['data'][0]['url']
         return image_url
     except openai.error.OpenAIError as e:
-        return e.error
+        print(e.error)
+        return "错误,请重试"
 
 
-def getAPIKey(userId):
-    with open("userChatInfo.json", "r", encoding="UTF-8") as f:
-        jsonData = json.loads(f.read())
+def get_db_connection():
+    if not hasattr(thread_local, "connection"):
+        thread_local.connection = sqlite3.connect("Yunhu.db")
+    return thread_local.connection
 
-    if any(item['userId'] == userId for item in jsonData):
-        for i in jsonData:
-            if userId == i["userId"]:
-                if i["KEY"] == "defaultAPIKEY":
-                    return "defaultAPIKEY"
-                else:
-                    return i["KEY"]
-    else:
-        return "null"
+
+def get_api_key(userId):
+    connection = get_db_connection()
+    cursor = connection.cursor()
+    cursor.execute("SELECT api_key FROM user_chat_info WHERE userId = ?", (userId,))
+    result = cursor.fetchone()
+
+    print(result)
+    if result:
+        return result[0]
 
 
 def setdefaultAPIKEY(Key):
+    print(Key)
+    dotenv.set_key(".env", "DEFAULT_API", Key)
     global defaultAPIKEY
     defaultAPIKEY = Key
+    dotenv.load_dotenv()
 
-    with open("./defaultSet.json", "w", encoding="UTF-8") as f:
-        jstr = {"defaultAPIKEY": Key}
-        json.dump(jstr, f)
+
+def close_db_connections():
+    if hasattr(thread_local, "connection"):
+        thread_local.connection.close()
+
+
+close_db_connections()
