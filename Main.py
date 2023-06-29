@@ -95,26 +95,45 @@ def onMessageNormalHander(event):
     senderType = event["chat"]["chatType"]
     text = event["message"]["content"]["text"]
     if senderType != "group":
+        if text.startswith('!'):
+            parts = text[1:].split(' ', 1)
+
+            command_name = parts[0]
+            command_content = parts[1] if len(parts) > 1 else None
+
+            if command_name == "post":
+                content = {
+                    "text": command_content,
+                    "buttons": [
+                        {
+                            "text": "复制公告",
+                            "actionType": 2,
+                            "value": command_content,
+                        }
+                    ],
+                }
+                func.openapi.batchSendMessage(func.get_all_user_ids(), "user", "text", content)
+                return
         res = openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "Working..."})
         msgID = res.json()["data"]["messageInfo"]["msgId"]
-        func.getChatGPTAnswer(text, event["sender"]["senderId"], msgID, "user")
+        func.getChatGPTAnswer(text, event["sender"]["senderId"], msgID, "user", event["sender"]["senderId"])
     elif senderType == "group":
         name = func.find_username(text)
         if name == "bot" or name == "ChatGPTBot" or name == "gpt" or name == "GPT":
             res = openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "Working..."})
 
             msgID = res.json()["data"]["messageInfo"]["msgId"]
-            func.getChatGPTAnswer(text, event["chat"]["chatId"], msgID, "group")
+            func.getChatGPTAnswer(text, event["chat"]["chatId"], msgID, "group", event["sender"]["senderId"])
 
 
 @sub.onGroupJoin
 def onGroupJoinHandler(event):
-    func.add_user()
+    func.add_user(event["userId"])
     msg = openapi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
     msgID = msg.json()["data"]["messageInfo"]["msgId"]
 
     func.getChatGPTAnswer(f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
-                          event["chatId"], msgID, "group")
+                          event["chatId"], msgID, "group", event["userId"])
 
 
 @sub.onGroupLeave
@@ -122,9 +141,8 @@ def onGroupLeaveHandler(event):
     msg = openapi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
     msgID = msg.json()["data"]["messageInfo"]["msgId"]
 
-    func.getChatGPTAnswer(
-        f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员", event["chatId"], msgID,
-        "group")
+    func.getChatGPTAnswer(f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
+                          event["chatId"], msgID, "group", event["userId"])
 
 
 @sub.onBotFollowed
@@ -134,7 +152,7 @@ def onBotFollowedHandler(event):
 
     func.getChatGPTAnswer(
         f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
-        event["userId"], msgID, "user")
+        event["userId"], msgID, "user", event["userId"])
 
 
 @sub.onButtonReportInline
@@ -147,7 +165,7 @@ def onButtonReportInlineHandler(event):
     elif event["value"][0:3] == "fan":
         func.getChatGPTAnswer(
             f"'{event['value'][3:]}'\n上面这段话是什么语言\n如果不是中文，请直接给出中文翻译\n如果是中文，请直接进行润色",
-            event["recvId"], event["msgId"], event["recvType"])
+            event["recvId"], event["msgId"], event["recvType"], event["userId"])
 
 
 if __name__ == '__main__':

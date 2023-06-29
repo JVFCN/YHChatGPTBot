@@ -6,11 +6,11 @@ from yunhu.openapi import Openapi
 import dotenv
 import sqlite3
 
-dotenv.load_dotenv()
+dotenv.load_dotenv("data/.env")
 defaultAPIKEY = os.getenv("DEFAULT_API")
 openapi = Openapi(os.getenv("TOKEN"))
 thread_local = threading.local()
-connection = sqlite3.connect("Yunhu.db")
+connection = sqlite3.connect("data/Yunhu.db")
 cursor = connection.cursor()
 
 cursor.execute(
@@ -56,8 +56,23 @@ def add_user(user_id):
     connection.commit()
 
 
-def getChatGPTAnswer(msg, userId, msgId, ChatType):
-    api_key = get_api_key(userId)
+def get_all_user_ids():
+    connection = get_db_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("SELECT userId FROM user_chat_info")
+
+    user_ids = [row[0] for row in cursor.fetchall()]
+
+    return user_ids
+
+
+def getChatGPTAnswer(msg, userId, msgId, ChatType, sdId):
+    global api_key
+    if ChatType == "user":
+        api_key = get_api_key(userId)
+    else:
+        api_key = get_api_key(sdId)
     if api_key == "defaultAPIKEY":
         openai.api_key = defaultAPIKEY
     else:
@@ -97,7 +112,6 @@ def getChatGPTAnswer(msg, userId, msgId, ChatType):
                                 {"text": "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"})
         elif e.http_status == 401:
             openapi.editMessage(msgId, userId, ChatType, "text", {"text": "APIKey错误"})
-
         else:
             openapi.editMessage(msgId, userId, ChatType, "text", {"text": "未知错误, 请重试"})
 
@@ -124,7 +138,7 @@ def getDALLEImg(prompt, userId):
 
 def get_db_connection():
     if not hasattr(thread_local, "connection"):
-        thread_local.connection = sqlite3.connect("Yunhu.db")
+        thread_local.connection = sqlite3.connect("data/Yunhu.db")
     return thread_local.connection
 
 
@@ -139,7 +153,7 @@ def get_api_key(userId):
 
 
 def setdefaultAPIKEY(Key):
-    dotenv.set_key(".env", "DEFAULT_API", Key)
+    dotenv.set_key("data/.env", "DEFAULT_API", Key)
     global defaultAPIKEY
     defaultAPIKEY = Key
     dotenv.load_dotenv()
