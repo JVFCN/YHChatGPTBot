@@ -50,8 +50,7 @@ def add_user(user_id):
     connection = get_db_connection()
     cursor = connection.cursor()
     cursor.execute(
-        "INSERT OR IGNORE INTO user_chat_info (userId, api_key) VALUES (?, ?)",
-        (user_id, "defaultAPIKEY")
+        "INSERT OR IGNORE INTO user_chat_info (userId, api_key) VALUES (?, ?)",(user_id, "defaultAPIKEY")
     )
     connection.commit()
 
@@ -107,6 +106,7 @@ def getChatGPTAnswer(msg, userId, msgId, ChatType, sdId):
 
 
     except openai.error.OpenAIError as e:
+        print(e)
         if e.http_status == 429:
             openapi.editMessage(msgId, userId, ChatType, "text",
                                 {"text": "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"})

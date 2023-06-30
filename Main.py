@@ -63,6 +63,8 @@ def onMsgInstruction(event):
                 ]
             })
     elif cmdId == 353 or cmdName == "更改默认APIKey":
+        if senderId != "3161064":
+            return
         if event["message"]["content"]["text"][:6] != "jin328":
             if event["chat"]["chatType"] != "group":
                 openapi.sendMessage(senderId, "user", "text", {"text": "密码错误"})
@@ -83,7 +85,7 @@ def onMsgInstruction(event):
             "text": f"用户{senderId}, 昵称:{event['sender']['senderNickname']}\n添加了期望功能:\n{senderText}"
         })
     elif cmdId == 371 or cmdName == "重置APIKey":
-        func.update_api_key(senderId, func.defaultAPIKEY)
+        func.update_api_key(senderId, "defaultAPIKEY")
         if event["chat"]["chatType"] != "group":
             openapi.sendMessage(senderId, "user", "text", {"text": "已重置APIKey"})
         else:
@@ -101,7 +103,7 @@ def onMessageNormalHander(event):
             command_name = parts[0]
             command_content = parts[1] if len(parts) > 1 else None
 
-            if command_name == "post":
+            if command_name == "post" and event["sender"]["senderId"] == "3161064":
                 content = {
                     "text": command_content,
                     "buttons": [
@@ -113,6 +115,9 @@ def onMessageNormalHander(event):
                     ],
                 }
                 func.openapi.batchSendMessage(func.get_all_user_ids(), "user", "text", content)
+                return
+            elif command_name == "addUser" and event["sender"]["senderId"] == "3161064":
+                func.add_user(command_content)
                 return
         res = openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "Working..."})
         msgID = res.json()["data"]["messageInfo"]["msgId"]
