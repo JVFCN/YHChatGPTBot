@@ -13,7 +13,7 @@ OpenApi = Openapi(os.getenv("TOKEN"))
 openai.proxy = os.getenv("PROXY")
 
 
-# »ñÈ¡ChatGPTµÄ»Ø´ğ
+# è·å–ChatGPTçš„å›ç­”
 def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
     global ApiKey
     if ChatType == "user":
@@ -33,38 +33,62 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
             model="gpt-3.5-turbo-16k",
             messages=Messages,
             temperature=1,
+            stream=True
         )
+        AllContent = ""
+        Num = 0
 
-        GPTMsg = Response["choices"][0]["message"]["content"]
-        OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
-            "text": GPTMsg,
-            "buttons": [
-                {
-                    "text": "¸´ÖÆ»Ø´ğ",
-                    "actionType": 2,
-                    "value": GPTMsg
-                },
-                {
-                    "text": "·­Òë/ÈóÉ«",
-                    "actionType": 3,
-                    "value": f"fan{GPTMsg}"
-                }
-            ]
-        })
+        for chunk in Response:
+            Num += 1
+            if chunk["choices"][0]["finish_reason"] == "stop":
+                OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
+                    "text": AllContent,
+                    "buttons": [
+                        {
+                            "text": "å¤åˆ¶å›ç­”",
+                            "actionType": 2,
+                            "value": AllContent
+                        },
+                        {
+                            "text": "ç¿»è¯‘/æ¶¦è‰²",
+                            "actionType": 3,
+                            "value": f"fan{AllContent}"
+                        }
+                    ]
+                })
+                return
+            AllContent += chunk["choices"][0]["delta"]["content"]
+            if Num % 20 == 0 and chunk["choices"][0]["delta"]["content"] != "":
+                OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
+                    "text": AllContent,
+                    "buttons": [
+                        {
+                            "text": "å¤åˆ¶å›ç­”",
+                            "actionType": 2,
+                            "value": AllContent
+                        },
+                        {
+                            "text": "ç¿»è¯‘/æ¶¦è‰²",
+                            "actionType": 3,
+                            "value": f"fan{AllContent}"
+                        }
+                    ]
+                })
+
 
 
     except openai.error.OpenAIError as e:
         print(e)
         if e.http_status == 429:
             OpenApi.editMessage(MsgId, UserId, ChatType, "text",
-                                {"text": "ChatGPTËÙÂÊÏŞÖÆ, ÇëµÈ´ı¼¸ÃëºóÔÙ´ÎÌáÎÊ»òÕßÊ¹ÓÃË½ÓĞAPIKey½â¾ö¸ÃÎÊÌâ"})
+                                {"text": "ChatGPTé€Ÿç‡é™åˆ¶, è¯·ç­‰å¾…å‡ ç§’åå†æ¬¡æé—®æˆ–è€…ä½¿ç”¨ç§æœ‰APIKeyè§£å†³è¯¥é—®é¢˜"})
         elif e.http_status == 401:
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "APIKey´íÎó"})
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "APIKeyé”™è¯¯"})
         else:
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "Î´Öª´íÎó, ÇëÖØÊÔ"})
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "æœªçŸ¥é”™è¯¯, è¯·é‡è¯•"})
 
 
-# »ñÈ¡DALL-EµÄÍ¼Ïñ(AI»æ»­)
+# è·å–DALL-Eçš„å›¾åƒ(AIç»˜ç”»)
 def GetDALLEImg(Prompt, UserId):
     ApiKey = SQLite.GetApiKey(UserId)
     if ApiKey == "defaultAPIKEY":
@@ -82,4 +106,4 @@ def GetDALLEImg(Prompt, UserId):
         return ImageUrl
     except openai.error.OpenAIError as e:
         print(e.error)
-        return "´íÎó,ÇëÖØÊÔ"
+        return "é”™è¯¯,è¯·é‡è¯•"
