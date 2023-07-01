@@ -14,29 +14,29 @@ openai.proxy = os.getenv("PROXY")
 
 
 # 获取ChatGPT的回答
-def GetChatGPTAnswer(msg, userId, msgId, ChatType, sdId):
+def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
     global ApiKey
     if ChatType == "user":
-        ApiKey = SQLite.GetApiKey(userId)
+        ApiKey = SQLite.GetApiKey(UserId)
     else:
-        ApiKey = SQLite.GetApiKey(sdId)
+        ApiKey = SQLite.GetApiKey(SenderId)
     if ApiKey == "defaultAPIKEY":
         openai.api_key = DefaultApiKey
     else:
         openai.api_key = ApiKey
-    messages = [{"role": "system",
+    Messages = [{"role": "system",
                  "content": f"You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: "
                             f"2021-09\nCurrent date: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"},
-                {"role": "user", "content": msg}]
+                {"role": "user", "content": Prompt}]
     try:
-        response = openai.ChatCompletion.create(
+        Response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo-16k",
-            messages=messages,
+            messages=Messages,
             temperature=1,
         )
 
-        GPTMsg = response["choices"][0]["message"]["content"]
-        OpenApi.editMessage(msgId, userId, ChatType, "text", {
+        GPTMsg = Response["choices"][0]["message"]["content"]
+        OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
             "text": GPTMsg,
             "buttons": [
                 {
@@ -56,17 +56,17 @@ def GetChatGPTAnswer(msg, userId, msgId, ChatType, sdId):
     except openai.error.OpenAIError as e:
         print(e)
         if e.http_status == 429:
-            OpenApi.editMessage(msgId, userId, ChatType, "text",
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text",
                                 {"text": "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"})
         elif e.http_status == 401:
-            OpenApi.editMessage(msgId, userId, ChatType, "text", {"text": "APIKey错误"})
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "APIKey错误"})
         else:
-            OpenApi.editMessage(msgId, userId, ChatType, "text", {"text": "未知错误, 请重试"})
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "未知错误, 请重试"})
 
 
 # 获取DALL-E的图像(AI绘画)
-def GetDALLEImg(prompt, userId):
-    ApiKey = SQLite.GetApiKey(userId)
+def GetDALLEImg(Prompt, UserId):
+    ApiKey = SQLite.GetApiKey(UserId)
     if ApiKey == "defaultAPIKEY":
         openai.api_key = DefaultApiKey
     else:
@@ -74,7 +74,7 @@ def GetDALLEImg(prompt, userId):
 
     try:
         Response = openai.Image.create(
-            prompt=prompt,
+            prompt=Prompt,
             n=1,
             size="1024x1024"
         )

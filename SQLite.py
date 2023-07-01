@@ -18,32 +18,32 @@ Connection.commit()
 
 # 更新用户的ApiKey
 def UpdateApiKey(user_id, new_api_key):
-    connection_ = GetDbConnection()
-    cursor_ = connection_.cursor()
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
 
-    cursor_.execute(
+    Cursor_.execute(
         "UPDATE user_chat_info SET api_key = ? WHERE userId = ?",
         (new_api_key, user_id)
     )
-    connection_.commit()
+    Connection_.commit()
 
 
 # 添加用户
 def AddUser(user_id):
-    connection_ = GetDbConnection()
-    cursor_ = connection_.cursor()
-    cursor_.execute(
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+    Cursor_.execute(
         "INSERT OR IGNORE INTO user_chat_info (userId, api_key) VALUES (?, ?)", (user_id, "defaultAPIKEY")
     )
-    connection_.commit()
+    Connection_.commit()
 
 
 # 获取所有用户的Id
 def GetAllUserIds():
-    connection_ = GetDbConnection()
-    cursor_ = connection_.cursor()
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
 
-    cursor_.execute("SELECT userId FROM user_chat_info")
+    Cursor_.execute("SELECT userId FROM user_chat_info")
 
     UserIds = [row[0] for row in Cursor.fetchall()]
 
@@ -59,10 +59,10 @@ def GetDbConnection():
 
 # 获取用户的ApiKey
 def GetApiKey(UserId):
-    connection_ = GetDbConnection()
-    cursor_ = connection_.cursor()
-    cursor_.execute("SELECT api_key FROM user_chat_info WHERE userId = ?", (UserId,))
-    result = cursor_.fetchone()
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+    Cursor_.execute("SELECT api_key FROM user_chat_info WHERE userId = ?", (UserId,))
+    result = Cursor_.fetchone()
 
     if result:
         return result[0]
