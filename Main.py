@@ -2,176 +2,211 @@ import os
 from flask import Flask, request
 from yunhu.subscription import Subscription
 from yunhu.openapi import Openapi
-import func
+import SQLite
+import OpenAI
 import dotenv
 
+# init
 dotenv.load_dotenv()
-app = Flask(__name__)
-sub = Subscription()
-openapi = Openapi(os.getenv("TOKEN"))
+App = Flask(__name__)
+Sub = Subscription()
+OpenApi = Openapi(os.getenv("TOKEN"))
 
 
-@app.route('/sub', methods=['POST'])
+@App.route('/sub', methods=['POST'])
 def subRoute():
     if request.method == 'POST':
-        sub.listen(request)
+        Sub.listen(request)
         return "success"
 
 
-@sub.onMessageInstruction
+# 接收指令消息处理
+@Sub.onMessageInstruction
 def onMsgInstruction(event):
-    cmdId = event["message"]["commandId"]
-    cmdName = event["message"]["commandName"]
-    senderId = event["sender"]["senderId"]
-    senderText = event["message"]["content"]["text"]
+    CmdId = event["message"]["commandId"]
+    CmdName = event["message"]["commandName"]
+    SenderId = event["sender"]["senderId"]
+    SenderText = event["message"]["content"]["text"]
+    ChatId = event["chat"]["chatId"]
+    ChatType = event["chat"]["chatType"]
 
-    if cmdId == 348 or cmdName == "设置私有APIKey":
-        if event["chat"]["chatType"] != "group":
-            func.add_user(senderId)
-            func.update_api_key(senderId, senderText)
-            openapi.sendMessage(senderId, "user", "text", {"text": "私有APIKey设置成功"})
+    if CmdId == 348 or CmdName == "设置私有APIKey":
+        if ChatType != "group":
+            SQLite.AddUser(SenderId)
+            SQLite.UpdateApiKey(SenderId, SenderText)
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": "私有APIKey设置成功"})
         else:
-            openapi.sendMessage(senderId, "user", "text", {"text": "请在私聊设置"})
-    elif cmdId == 352 or cmdName == "AI生成图像":
-        imgUrl = func.getDALLEImg(senderText["text"], senderId)
-        if event["chat"]["chatType"] == "group":
-            if imgUrl[:6] == "错误,请重试":
-                openapi.sendMessage(event["chat"]["chatId"], "group", "text", {imgUrl})
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": "请在私聊设置"})
+    elif CmdId == 352 or CmdName == "AI生成图像":
+        ImgUrl = OpenAI.GetDALLEImg(SenderText["text"], SenderId)
+        if ChatType == "group":
+            if ImgUrl[:6] == "错误,请重试":
+                OpenApi.sendMessage(ChatId, "group", "text", {ImgUrl})
             else:
-                openapi.sendMessage(event["chat"]["chatId"], "group", "image", {"imageUrl": imgUrl})
+                OpenApi.sendMessage(ChatId, "group", "image", {"imageUrl": ImgUrl})
         else:
-            if imgUrl[:6] == "错误,请重试":
-                openapi.sendMessage(event["chat"]["chatId"], "user", "text", {imgUrl})
+            if ImgUrl[:6] == "错误,请重试":
+                OpenApi.sendMessage(ChatId, "user", "text", {ImgUrl})
             else:
-                openapi.sendMessage(senderId, "user", "image", {"imageUrl": imgUrl})
-    elif cmdId == 351 or cmdName == "查看APIKey":
-        key = func.get_api_key(senderId)
-        if key == "defaultAPIKEY":
-            key = "你用的是默认APIKey"
-            openapi.sendMessage(senderId, "user", "text", {"text": f"APIKey:{key}"})
+                OpenApi.sendMessage(SenderId, "user", "image", {"imageUrl": ImgUrl})
+    elif CmdId == 351 or CmdName == "查看APIKey":
+        Key = SQLite.GetApiKey(SenderId)
+        if Key == "defaultAPIKEY":
+            Key = "你用的是默认APIKey"
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": f"APIKey:{Key}"})
         else:
-            openapi.sendMessage(senderId, "user", "text", {
-                "text": key,
+            OpenApi.sendMessage(SenderId, "user", "text", {
+                "text": Key,
                 "buttons": [
                     [
                         {
                             "text": "隐藏APIKey",
                             "actionType": 3,
-                            "value": f"APIKey{key}"
+                            "value": f"APIKey{Key}"
                         }
                     ]
                 ]
             })
-    elif cmdId == 353 or cmdName == "更改默认APIKey":
-        if senderId != "3161064":
+    elif CmdId == 353 or CmdName == "更改默认APIKey":
+        if SenderId != "3161064":
             return
         if event["message"]["content"]["text"][:6] != "jin328":
-            if event["chat"]["chatType"] != "group":
-                openapi.sendMessage(senderId, "user", "text", {"text": "密码错误"})
+            if ChatType != "group":
+                OpenApi.sendMessage(SenderId, "user", "text", {"text": "密码错误"})
             else:
-                openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "密码错误"})
+                OpenApi.sendMessage(ChatId, "group", "text", {"text": "密码错误"})
         else:
-            if event["chat"]["chatType"] != "group":
-                func.setdefaultAPIKEY(senderText[6:])
-                openapi.sendMessage(senderId, "user", "text", {"text": "默认APIKey设置成功"})
+            if ChatType != "group":
+                SQLite.SetDefaultApiKey(SenderText[6:])
+                OpenApi.sendMessage(SenderId, "user", "text", {"text": "默认APIKey设置成功"})
             else:
-                openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "请在私聊设置默认APIKey"})
-    elif cmdId == 355 or cmdName == "添加期望功能":
-        if event["chat"]["chatType"] != "group":
-            openapi.sendMessage(senderId, "user", "text", {"text": "添加成功"})
+                OpenApi.sendMessage(ChatId, "group", "text", {"text": "请在私聊设置默认APIKey"})
+    elif CmdId == 355 or CmdName == "添加期望功能":
+        if ChatType != "group":
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": "添加成功"})
         else:
-            openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "添加成功"})
-        openapi.sendMessage("3161064", "user", "text", {
-            "text": f"用户{senderId}, 昵称:{event['sender']['senderNickname']}\n添加了期望功能:\n{senderText}"
+            OpenApi.sendMessage(ChatId, "group", "text", {"text": "添加成功"})
+        OpenApi.sendMessage("3161064", "user", "text", {
+            "text": f"用户{SenderId}, 昵称:{event['sender']['senderNickname']}\n添加了期望功能:\n{SenderText}"
         })
-    elif cmdId == 371 or cmdName == "重置APIKey":
-        func.update_api_key(senderId, "defaultAPIKEY")
-        if event["chat"]["chatType"] != "group":
-            openapi.sendMessage(senderId, "user", "text", {"text": "已重置APIKey"})
+    elif CmdId == 371 or CmdName == "重置APIKey":
+        SQLite.UpdateApiKey(SenderId, "defaultAPIKEY")
+        if ChatType != "group":
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": "已重置APIKey"})
         else:
-            openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "已重置APIKey"})
+            OpenApi.sendMessage(ChatId, "group", "text", {"text": "已重置APIKey"})
 
 
-@sub.onMessageNormal
+# 接收普通消息处理
+@Sub.onMessageNormal
 def onMessageNormalHander(event):
-    senderType = event["chat"]["chatType"]
-    text = event["message"]["content"]["text"]
-    if senderType != "group":
-        if text.startswith('!'):
-            parts = text[1:].split(' ', 1)
+    SenderType = event["chat"]["chatType"]
+    Text = event["message"]["content"]["text"]
+    SenderId = event["sender"]["senderId"]
+    # 处理管理员指令 命令格式:"!命令名字 命令内容"
+    if SenderType != "group":
+        if Text.startswith('!'):
+            Parts = Text[1:].split(' ', 1)
 
-            command_name = parts[0]
-            command_content = parts[1] if len(parts) > 1 else None
+            CommandName = Parts[0]  # 解析命令名字
+            CommandContent = Parts[1] if len(Parts) > 1 else None  # 解析命令内容
 
-            if command_name == "post" and event["sender"]["senderId"] == "3161064":
-                content = {
-                    "text": command_content,
+            # 公告命令
+            if CommandName == "post" and SenderId == "3161064":
+                SendContent = {
+                    "text": CommandContent,
                     "buttons": [
                         {
                             "text": "复制公告",
                             "actionType": 2,
-                            "value": command_content,
+                            "value": CommandContent,
                         }
                     ],
                 }
-                func.openapi.batchSendMessage(func.get_all_user_ids(), "user", "text", content)
+                OpenApi.batchSendMessage(SQLite.GetAllUserIds(), "user", "text", SendContent)
                 return
-            elif command_name == "addUser" and event["sender"]["senderId"] == "3161064":
-                func.add_user(command_content)
+            # 添加用户命令
+            elif CommandName == "addUser" and SenderId == "3161064":
+                SQLite.AddUser(CommandContent)
                 return
-        res = openapi.sendMessage(event["sender"]["senderId"], "user", "text", {"text": "Working..."})
-        msgID = res.json()["data"]["messageInfo"]["msgId"]
-        func.getChatGPTAnswer(text, event["sender"]["senderId"], msgID, "user", event["sender"]["senderId"])
-    elif senderType == "group":
-        name = func.find_username(text)
+        Res = OpenApi.sendMessage(SenderId, "user", "text", {"text": "Working..."})
+        MsgId = Res.json()["data"]["messageInfo"]["msgId"]
+        OpenAI.GetChatGPTAnswer(Text, SenderId, MsgId, "user", SenderId)
+
+    # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
+    elif SenderType == "group":
+        name = FindUserName(Text)
         if name == "bot" or name == "ChatGPTBot" or name == "gpt" or name == "GPT":
-            res = openapi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "Working..."})
+            Res = OpenApi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "Working..."})
 
-            msgID = res.json()["data"]["messageInfo"]["msgId"]
-            func.getChatGPTAnswer(text, event["chat"]["chatId"], msgID, "group", event["sender"]["senderId"])
+            MsgId = Res.json()["data"]["messageInfo"]["msgId"]
+            OpenAI.GetChatGPTAnswer(Text, event["chat"]["chatId"], MsgId, "group", SenderId)
 
 
-@sub.onGroupJoin
+# 加群通知(欢迎)
+@Sub.onGroupJoin
 def onGroupJoinHandler(event):
-    func.add_user(event["userId"])
-    msg = openapi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
-    msgID = msg.json()["data"]["messageInfo"]["msgId"]
+    SQLite.AddUser(event["userId"])
+    Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
+    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-    func.getChatGPTAnswer(f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
-                          event["chatId"], msgID, "group", event["userId"])
+    OpenAI.GetChatGPTAnswer(
+        f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
+        event["chatId"], MsgId, "group", event["userId"])
 
 
-@sub.onGroupLeave
+# 退群通知(送别)
+@Sub.onGroupLeave
 def onGroupLeaveHandler(event):
-    msg = openapi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
-    msgID = msg.json()["data"]["messageInfo"]["msgId"]
+    Msg = OpenApi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
+    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-    func.getChatGPTAnswer(f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
-                          event["chatId"], msgID, "group", event["userId"])
+    OpenAI.GetChatGPTAnswer(
+        f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
+        event["chatId"], MsgId, "group", event["userId"])
 
 
-@sub.onBotFollowed
+# 添加机器人好友通知(打招呼)
+@Sub.onBotFollowed
 def onBotFollowedHandler(event):
-    msg = openapi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
-    msgID = msg.json()["data"]["messageInfo"]["msgId"]
+    Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
+    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-    func.getChatGPTAnswer(
+    OpenAI.GetChatGPTAnswer(
         f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
-        event["userId"], msgID, "user", event["userId"])
+        event["userId"], MsgId, "user", event["userId"])
 
 
-@sub.onButtonReportInline
+# 按钮点击事件处理
+@Sub.onButtonReportInline
 def onButtonReportInlineHandler(event):
+    # 隐藏ApiKey
     if event["value"][0:6] == "APIKey":
-        key = event["value"][6:]
-        openapi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
-            "text": key[:8] + '*' * (len(key) - 12) + key[-4:]
+        Key = event["value"][6:]
+        OpenApi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
+            "text": Key[:8] + '*' * (len(Key) - 12) + Key[-4:]
         })
+    # 翻译/润色
     elif event["value"][0:3] == "fan":
-        func.getChatGPTAnswer(
+        OpenAI.GetChatGPTAnswer(
             f"'{event['value'][3:]}'\n上面这段话是什么语言\n如果不是中文，请直接给出中文翻译\n如果是中文，请直接进行润色",
             event["recvId"], event["msgId"], event["recvType"], event["userId"])
 
 
+# 从消息中找到@的对象
+def FindUserName(String):
+    AtIndex = String.find('@')
+    if AtIndex != -1:
+        UserName = ""
+        for Char in String[AtIndex + 1:]:
+            if Char == ' ':
+                break
+            UserName += Char
+        return UserName
+    else:
+        return None
+
+
+# 运行程序(启动机器人)
 if __name__ == '__main__':
-    app.run("0.0.0.0", 7888)
+    App.run("0.0.0.0", 7888)
