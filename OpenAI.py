@@ -9,7 +9,7 @@ import SQLite
 # init
 dotenv.load_dotenv("data/.env")
 DefaultApiKey = os.getenv("DEFAULT_API")
-openapi = Openapi(os.getenv("TOKEN"))
+OpenApi = Openapi(os.getenv("TOKEN"))
 openai.proxy = os.getenv("PROXY")
 
 
@@ -36,7 +36,7 @@ def GetChatGPTAnswer(msg, userId, msgId, ChatType, sdId):
         )
 
         GPTMsg = response["choices"][0]["message"]["content"]
-        openapi.editMessage(msgId, userId, ChatType, "text", {
+        OpenApi.editMessage(msgId, userId, ChatType, "text", {
             "text": GPTMsg,
             "buttons": [
                 {
@@ -56,12 +56,12 @@ def GetChatGPTAnswer(msg, userId, msgId, ChatType, sdId):
     except openai.error.OpenAIError as e:
         print(e)
         if e.http_status == 429:
-            openapi.editMessage(msgId, userId, ChatType, "text",
+            OpenApi.editMessage(msgId, userId, ChatType, "text",
                                 {"text": "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"})
         elif e.http_status == 401:
-            openapi.editMessage(msgId, userId, ChatType, "text", {"text": "APIKey错误"})
+            OpenApi.editMessage(msgId, userId, ChatType, "text", {"text": "APIKey错误"})
         else:
-            openapi.editMessage(msgId, userId, ChatType, "text", {"text": "未知错误, 请重试"})
+            OpenApi.editMessage(msgId, userId, ChatType, "text", {"text": "未知错误, 请重试"})
 
 
 # 获取DALL-E的图像(AI绘画)
