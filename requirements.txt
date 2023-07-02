@@ -1,3 +1,4 @@
 yunhu
 flask
 python-dotenv
+langdetect

@@ -44,8 +44,7 @@ def GetAllUserIds():
     Cursor_ = Connection_.cursor()
 
     Cursor_.execute("SELECT userId FROM user_chat_info")
-
-    UserIds = [row[0] for row in Cursor.fetchall()]
+    UserIds = [str(row[0]) for row in Cursor_.fetchall()]
 
     return UserIds
 

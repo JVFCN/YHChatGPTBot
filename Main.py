@@ -5,6 +5,7 @@ from yunhu.openapi import Openapi
 import SQLite
 import OpenAI
 import dotenv
+import langdetect
 
 # init
 dotenv.load_dotenv()
@@ -62,7 +63,7 @@ def onMsgInstruction(event):
                         {
                             "text": "隐藏APIKey",
                             "actionType": 3,
-                            "value": f"APIKey{Key}"
+                            "value": f"ApiKey{Key}"
                         }
                     ]
                 ]
@@ -181,16 +182,17 @@ def onBotFollowedHandler(event):
 @Sub.onButtonReportInline
 def onButtonReportInlineHandler(event):
     # 隐藏ApiKey
-    if event["value"][0:6] == "APIKey":
+    if event["value"][0:6] == "ApiKey":
         Key = event["value"][6:]
         OpenApi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
             "text": Key[:8] + '*' * (len(Key) - 12) + Key[-4:]
         })
     # 翻译/润色
     elif event["value"][0:3] == "fan":
-        OpenAI.GetChatGPTAnswer(
-            f"'{event['value'][3:]}'\n上面这段话是什么语言\n如果不是中文，请直接给出中文翻译\n如果是中文，请直接进行润色",
-            event["recvId"], event["msgId"], event["recvType"], event["userId"])
+        if langdetect.detect(event['value'][3:]) != "zh-cn":
+            OpenAI.GetChatGPTAnswer(
+                f"'{event['value'][3:]}'\n请把上面这段话翻译成中文, 要信达雅",
+                event["recvId"], event["msgId"], event["recvType"], event["userId"])
 
 
 # 从消息中找到@的对象
