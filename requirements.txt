@@ -2,3 +2,4 @@ yunhu
 flask
 python-dotenv
 langdetect
+requests
