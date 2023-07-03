@@ -170,51 +170,59 @@ def onMessageNormalHander(event):
             OpenAI.GetChatGPTAnswer(Text, event["chat"]["chatId"], MsgId, "group", SenderId)
 
     # 加群通知(欢迎)
-    @Sub.onGroupJoin
-    def onGroupJoinHandler(event):
-        SQLite.AddUser(event["userId"])
-        Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
-        MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-        OpenAI.GetChatGPTAnswer(
-            f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
-            event["chatId"], MsgId, "group", event["userId"])
 
-    # 退群通知(送别)
-    @Sub.onGroupLeave
-    def onGroupLeaveHandler(event):
-        Msg = OpenApi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
-        MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
+@Sub.onGroupJoin
+def onGroupJoinHandler(event):
+    SQLite.AddUser(event["userId"])
+    Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
+    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-        OpenAI.GetChatGPTAnswer(
-            f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
-            event["chatId"], MsgId, "group", event["userId"])
+    OpenAI.GetChatGPTAnswer(
+        f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
+        event["chatId"], MsgId, "group", event["userId"])
+
+
+# 退群通知(送别)
+@Sub.onGroupLeave
+def onGroupLeaveHandler(event):
+    Msg = OpenApi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
+    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
+
+    OpenAI.GetChatGPTAnswer(
+        f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
+        event["chatId"], MsgId, "group", event["userId"])
 
     # 添加机器人好友通知(打招呼)
-    @Sub.onBotFollowed
-    def onBotFollowedHandler(event):
-        Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
-        MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-        OpenAI.GetChatGPTAnswer(
-            f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
-            event["userId"], MsgId, "user", event["userId"])
 
-    # 按钮点击事件处理
-    @Sub.onButtonReportInline
-    def onButtonReportInlineHandler(event):
-        # 隐藏ApiKey
-        if event["value"][0:6] == "ApiKey":
-            Key = event["value"][6:]
-            OpenApi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
-                "text": Key[:8] + '*' * (len(Key) - 12) + Key[-4:]
-            })
-        # 翻译/润色
-        elif event["value"][0:3] == "fan":
-            if langdetect.detect(event['value'][3:]) != "zh-cn":
-                OpenAI.GetChatGPTAnswer(
-                    f"'{event['value'][3:]}'\n请把上面这段话翻译成中文, 要信达雅",
-                    event["recvId"], event["msgId"], event["recvType"], event["userId"])
+@Sub.onBotFollowed
+
+
+def onBotFollowedHandler(event):
+    Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
+    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
+
+    OpenAI.GetChatGPTAnswer(
+        f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
+        event["userId"], MsgId, "user", event["userId"])
+
+
+# 按钮点击事件处理
+@Sub.onButtonReportInline
+def onButtonReportInlineHandler(event):
+    # 隐藏ApiKey
+    if event["value"][0:6] == "ApiKey":
+        Key = event["value"][6:]
+        OpenApi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
+            "text": Key[:8] + '*' * (len(Key) - 12) + Key[-4:]
+        })
+    # 翻译/润色
+    elif event["value"][0:3] == "fan":
+        if langdetect.detect(event['value'][3:]) != "zh-cn":
+            OpenAI.GetChatGPTAnswer(
+                f"'{event['value'][3:]}'\n请把上面这段话翻译成中文, 要信达雅",
+                event["recvId"], event["msgId"], event["recvType"], event["userId"])
 
 
 # 运行程序(启动机器人)
