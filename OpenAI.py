@@ -41,7 +41,7 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
         for chunk in Response:
             Num += 1
             if chunk["choices"][0]["finish_reason"] == "stop":
-                OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
+                OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
                     "text": AllContent,
                     "buttons": [
                         {
@@ -59,7 +59,7 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
                 return
             AllContent += chunk["choices"][0]["delta"]["content"]
             if Num % 20 == 0 and chunk["choices"][0]["delta"]["content"] != "":
-                OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
+                OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
                     "text": AllContent,
                     "buttons": [
                         {

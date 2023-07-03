@@ -104,16 +104,25 @@ def onMessageNormalHander(event):
     SenderType = event["chat"]["chatType"]
     Text = event["message"]["content"]["text"]
     SenderId = event["sender"]["senderId"]
+    SQLite.AddUser(SenderId)
     # 处理管理员指令 命令格式:"!命令名字 命令内容"
     if SenderType != "group":
-        if Text.startswith('!'):
+        if not Text.startswith('!'):
+            Res = OpenApi.sendMessage(SenderId, "user", "markdown", {"text": "Working..."})
+            MsgId = Res.json()["data"]["messageInfo"]["msgId"]
+            OpenAI.GetChatGPTAnswer(Text, SenderId, MsgId, "user", SenderId)
+        else:
             Parts = Text[1:].split(' ', 1)
 
             CommandName = Parts[0]  # 解析命令名字
             CommandContent = Parts[1] if len(Parts) > 1 else None  # 解析命令内容
 
             # 公告命令
-            if CommandName == "post" and SenderId == "3161064":
+            if CommandName == "post":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text",
+                                        {"text": "您无权执行此命令"})
+                    return
                 SendContent = {
                     "text": CommandContent,
                     "buttons": [
@@ -127,86 +136,85 @@ def onMessageNormalHander(event):
                 OpenApi.batchSendMessage(SQLite.GetAllUserIds(), "user", "text", SendContent)
                 return
             # 添加用户命令
-            elif CommandName == "addUser" and SenderId == "3161064":
+            elif CommandName == "addUser":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text",
+                                        {"text": "您无权执行此命令"})
+                    return
                 SQLite.AddUser(CommandContent)
                 return
-        Res = OpenApi.sendMessage(SenderId, "user", "text", {"text": "Working..."})
-        MsgId = Res.json()["data"]["messageInfo"]["msgId"]
-        OpenAI.GetChatGPTAnswer(Text, SenderId, MsgId, "user", SenderId)
-
+            elif CommandName == "addSu" and SenderId == "3161064":
+                SQLite.SetUserPermission(CommandContent, True)
+                return
+            elif CommandName == "cutSu" and SenderId == "3161064":
+                SQLite.SetUserPermission(CommandContent, False)
+                return
     # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
-    elif SenderType == "group":
-        name = FindUserName(Text)
-        if name == "bot" or name == "ChatGPTBot" or name == "gpt" or name == "GPT":
-            Res = OpenApi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "Working..."})
+    else:
+        # 从消息中找到@的对象
+        AtIndex = Text.find('@')
+        if AtIndex != -1:
+            UserName = ""
+            for Char in Text[AtIndex + 1:]:
+                if Char == ' ':
+                    break
+                UserName += Char
+            Name = UserName
+        else:
+            return
+        # 判断@的对象是否符合回答要求
+        if Name == "bot" or Name == "ChatGPTBot" or Name == "gpt" or Name == "GPT":
+            Res = OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown", {"text": "Working..."})
 
             MsgId = Res.json()["data"]["messageInfo"]["msgId"]
             OpenAI.GetChatGPTAnswer(Text, event["chat"]["chatId"], MsgId, "group", SenderId)
 
+    # 加群通知(欢迎)
+    @Sub.onGroupJoin
+    def onGroupJoinHandler(event):
+        SQLite.AddUser(event["userId"])
+        Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
+        MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-# 加群通知(欢迎)
-@Sub.onGroupJoin
-def onGroupJoinHandler(event):
-    SQLite.AddUser(event["userId"])
-    Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
-    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
+        OpenAI.GetChatGPTAnswer(
+            f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
+            event["chatId"], MsgId, "group", event["userId"])
 
-    OpenAI.GetChatGPTAnswer(
-        f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
-        event["chatId"], MsgId, "group", event["userId"])
+    # 退群通知(送别)
+    @Sub.onGroupLeave
+    def onGroupLeaveHandler(event):
+        Msg = OpenApi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
+        MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
+        OpenAI.GetChatGPTAnswer(
+            f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
+            event["chatId"], MsgId, "group", event["userId"])
 
-# 退群通知(送别)
-@Sub.onGroupLeave
-def onGroupLeaveHandler(event):
-    Msg = OpenApi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
-    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
+    # 添加机器人好友通知(打招呼)
+    @Sub.onBotFollowed
+    def onBotFollowedHandler(event):
+        Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
+        MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-    OpenAI.GetChatGPTAnswer(
-        f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
-        event["chatId"], MsgId, "group", event["userId"])
+        OpenAI.GetChatGPTAnswer(
+            f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
+            event["userId"], MsgId, "user", event["userId"])
 
-
-# 添加机器人好友通知(打招呼)
-@Sub.onBotFollowed
-def onBotFollowedHandler(event):
-    Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
-    MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
-
-    OpenAI.GetChatGPTAnswer(
-        f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
-        event["userId"], MsgId, "user", event["userId"])
-
-
-# 按钮点击事件处理
-@Sub.onButtonReportInline
-def onButtonReportInlineHandler(event):
-    # 隐藏ApiKey
-    if event["value"][0:6] == "ApiKey":
-        Key = event["value"][6:]
-        OpenApi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
-            "text": Key[:8] + '*' * (len(Key) - 12) + Key[-4:]
-        })
-    # 翻译/润色
-    elif event["value"][0:3] == "fan":
-        if langdetect.detect(event['value'][3:]) != "zh-cn":
-            OpenAI.GetChatGPTAnswer(
-                f"'{event['value'][3:]}'\n请把上面这段话翻译成中文, 要信达雅",
-                event["recvId"], event["msgId"], event["recvType"], event["userId"])
-
-
-# 从消息中找到@的对象
-def FindUserName(String):
-    AtIndex = String.find('@')
-    if AtIndex != -1:
-        UserName = ""
-        for Char in String[AtIndex + 1:]:
-            if Char == ' ':
-                break
-            UserName += Char
-        return UserName
-    else:
-        return None
+    # 按钮点击事件处理
+    @Sub.onButtonReportInline
+    def onButtonReportInlineHandler(event):
+        # 隐藏ApiKey
+        if event["value"][0:6] == "ApiKey":
+            Key = event["value"][6:]
+            OpenApi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
+                "text": Key[:8] + '*' * (len(Key) - 12) + Key[-4:]
+            })
+        # 翻译/润色
+        elif event["value"][0:3] == "fan":
+            if langdetect.detect(event['value'][3:]) != "zh-cn":
+                OpenAI.GetChatGPTAnswer(
+                    f"'{event['value'][3:]}'\n请把上面这段话翻译成中文, 要信达雅",
+                    event["recvId"], event["msgId"], event["recvType"], event["userId"])
 
 
 # 运行程序(启动机器人)
