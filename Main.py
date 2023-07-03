@@ -69,7 +69,8 @@ def onMsgInstruction(event):
                 ]
             })
     elif CmdId == 353 or CmdName == "更改默认APIKey":
-        if SenderId != "3161064":
+        if not SQLite.CheckUserPermission(SenderId):
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
             return
         if event["message"]["content"]["text"][:6] != "jin328":
             if ChatType != "group":
@@ -169,9 +170,8 @@ def onMessageNormalHander(event):
             MsgId = Res.json()["data"]["messageInfo"]["msgId"]
             OpenAI.GetChatGPTAnswer(Text, event["chat"]["chatId"], MsgId, "group", SenderId)
 
-    # 加群通知(欢迎)
 
-
+# 加群通知(欢迎)
 @Sub.onGroupJoin
 def onGroupJoinHandler(event):
     SQLite.AddUser(event["userId"])

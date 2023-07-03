@@ -8,12 +8,6 @@ ThreadLocal = threading.local()
 Connection = sqlite3.connect("data/Yunhu.db")
 Cursor = Connection.cursor()
 # 数据库初始化
-# Cursor.execute(
-#     "CREATE TABLE IF NOT EXISTS user_chat_info ("
-#     "userId INTEGER PRIMARY KEY,"
-#     "api_key TEXT NOT NULL DEFAULT 'defaultAPIKEY')"
-# )
-# Connection.commit()
 Cursor.execute(
     "CREATE TABLE IF NOT EXISTS user_chat_info ("
     "userId INTEGER PRIMARY KEY,"
@@ -36,13 +30,6 @@ def UpdateApiKey(user_id, new_api_key):
 
 
 # 添加用户
-# def AddUser(user_id):
-#     Connection_ = GetDbConnection()
-#     Cursor_ = Connection_.cursor()
-#     Cursor_.execute(
-#         "INSERT OR IGNORE INTO user_chat_info (userId, api_key) VALUES (?, ?)", (user_id, "defaultAPIKEY")
-#     )
-#     Connection_.commit()
 def AddUser(user_id):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
