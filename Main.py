@@ -197,8 +197,6 @@ def onGroupLeaveHandler(event):
 
 
 @Sub.onBotFollowed
-
-
 def onBotFollowedHandler(event):
     Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
     MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
