@@ -39,7 +39,7 @@ def onMsgInstruction(event):
         else:
             OpenApi.sendMessage(SenderId, "user", "text", {"text": "请在私聊设置"})
     elif CmdId == 352 or CmdName == "AI生成图像":
-        ImgUrl = OpenAI.GetDALLEImg(SenderText["text"], SenderId)
+        ImgUrl = OpenAI.GetDALLEImg(SenderText, SenderId)
         if ChatType == "group":
             if ImgUrl[:6] == "错误,请重试":
                 OpenApi.sendMessage(ChatId, "group", "text", {ImgUrl})
