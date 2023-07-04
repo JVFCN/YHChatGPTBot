@@ -1,6 +1,6 @@
 import sqlite3
 import threading
-
+import OpenAI
 import dotenv
 
 # init
@@ -92,8 +92,7 @@ def GetApiKey(UserId):
 # 设置所有用户的默认ApiKey
 def SetDefaultApiKey(Key):
     dotenv.set_key("./data/.env", "DEFAULT_API", Key)
-    global DefaultApiKey
-    DefaultApiKey = Key
+    OpenAI.DefaultApiKey = Key
     dotenv.load_dotenv()
 
 

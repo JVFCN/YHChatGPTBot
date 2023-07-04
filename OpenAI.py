@@ -81,11 +81,12 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
         print(e)
         if e.http_status == 429:
             OpenApi.editMessage(MsgId, UserId, ChatType, "text",
-                                {"text": "ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题"})
+                                {
+                                    "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
         elif e.http_status == 401:
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "APIKey错误"})
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
         else:
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": "未知错误, 请重试"})
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e.error}"})
 
 
 # 获取DALL-E的图像(AI绘画)

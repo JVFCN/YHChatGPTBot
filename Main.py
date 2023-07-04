@@ -53,8 +53,11 @@ def onMsgInstruction(event):
     elif CmdId == 351 or CmdName == "查看APIKey":
         Key = SQLite.GetApiKey(SenderId)
         if Key == "defaultAPIKEY":
-            Key = "你用的是默认APIKey"
-            OpenApi.sendMessage(SenderId, "user", "text", {"text": f"APIKey:{Key}"})
+            if SenderId == "3161064":
+                Key = f"你用的是默认ApiKey\n{OpenAI.DefaultApiKey}"
+            else:
+                Key = "你用的是默认ApiKey"
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": Key})
         else:
             OpenApi.sendMessage(SenderId, "user", "text", {
                 "text": Key,
@@ -80,9 +83,9 @@ def onMsgInstruction(event):
         else:
             if ChatType != "group":
                 SQLite.SetDefaultApiKey(SenderText[6:])
-                OpenApi.sendMessage(SenderId, "user", "text", {"text": "默认APIKey设置成功"})
+                OpenApi.sendMessage(SenderId, "user", "text", {"text": "默认ApiKey设置成功"})
             else:
-                OpenApi.sendMessage(ChatId, "group", "text", {"text": "请在私聊设置默认APIKey"})
+                OpenApi.sendMessage(ChatId, "group", "text", {"text": "请在私聊设置默认ApiKey"})
     elif CmdId == 355 or CmdName == "添加期望功能":
         if ChatType != "group":
             OpenApi.sendMessage(SenderId, "user", "text", {"text": "添加成功"})
@@ -193,9 +196,8 @@ def onGroupLeaveHandler(event):
         f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
         event["chatId"], MsgId, "group", event["userId"])
 
-    # 添加机器人好友通知(打招呼)
 
-
+# 添加机器人好友通知(打招呼)
 @Sub.onBotFollowed
 def onBotFollowedHandler(event):
     Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
