@@ -1,4 +1,7 @@
+import ast
 import os
+from pprint import pprint
+
 import dotenv
 import openai
 from yunhu.openapi import Openapi
@@ -15,18 +18,20 @@ Model = os.getenv("DEFAULT_MODEL")
 
 # 获取ChatGPT的回答
 def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
+    global AllContent
     if ChatType == "user":
         ApiKey = SQLite.GetApiKey(UserId)
     else:
         ApiKey = SQLite.GetApiKey(SenderId)
+
     if ApiKey == "defaultAPIKEY":
         openai.api_key = DefaultApiKey
     else:
         openai.api_key = ApiKey
-    Messages = [{"role": "system",
-                 "content": f"You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: "
-                            f"2021-09"},
-                {"role": "user", "content": Prompt}]
+
+    Messages = SQLite.GetUserChat(SenderId)
+    Messages.append({"role": "user", "content": Prompt})
+
     try:
         Response = openai.ChatCompletion.create(
             model=Model,
@@ -55,6 +60,8 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
                         }
                     ]
                 })
+                Messages.append({"role": "assistant", "content": AllContent})
+                SQLite.UpdateUserChat(SenderId, Messages)
                 return
             AllContent += chunk["choices"][0]["delta"]["content"]
             if Num % 20 == 0 and chunk["choices"][0]["delta"]["content"] != "":
