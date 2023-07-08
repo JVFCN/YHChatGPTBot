@@ -1,5 +1,4 @@
 import os
-import time
 import dotenv
 import openai
 from yunhu.openapi import Openapi
