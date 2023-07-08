@@ -153,6 +153,16 @@ def onMessageNormalHander(event):
             elif CommandName == "cutSu" and SenderId == "3161064":
                 SQLite.SetUserPermission(CommandContent, False)
                 return
+            elif CommandName == "ChangeModel":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text",
+                                        {"text": "您无权执行此命令"})
+                    return
+                else:
+                    OpenAI.ChangeModel(CommandContent)
+                    OpenApi.sendMessage(SenderId, "user", "text",
+                                        {"text": "模型已更改"})
+                    return
     # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
     else:
         # 从消息中找到@的对象

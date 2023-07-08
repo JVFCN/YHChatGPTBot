@@ -7,7 +7,7 @@ import dotenv
 ThreadLocal = threading.local()
 Connection = sqlite3.connect("data/Yunhu.db")
 Cursor = Connection.cursor()
-# Êı¾İ¿â³õÊ¼»¯
+# æ•°æ®åº“åˆå§‹åŒ–
 Cursor.execute(
     "CREATE TABLE IF NOT EXISTS user_chat_info ("
     "userId INTEGER PRIMARY KEY,"
@@ -17,7 +17,7 @@ Cursor.execute(
 Connection.commit()
 
 
-# ¸üĞÂÓÃ»§µÄApiKey
+# æ›´æ–°ç”¨æˆ·çš„ApiKey
 def UpdateApiKey(user_id, new_api_key):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
@@ -29,7 +29,7 @@ def UpdateApiKey(user_id, new_api_key):
     Connection_.commit()
 
 
-# Ìí¼ÓÓÃ»§
+# æ·»åŠ ç”¨æˆ·
 def AddUser(user_id):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
@@ -40,6 +40,7 @@ def AddUser(user_id):
     Connection_.commit()
 
 
+# ä¸ºç”¨æˆ·è®¾ç½®adminæƒé™
 def SetUserPermission(user_id, is_admin):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
@@ -47,6 +48,7 @@ def SetUserPermission(user_id, is_admin):
     Connection_.commit()
 
 
+# æ£€æŸ¥ç”¨æˆ·æ˜¯å¦æœ‰adminæƒé™
 def CheckUserPermission(user_id):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
@@ -58,27 +60,27 @@ def CheckUserPermission(user_id):
         return False
 
 
-# »ñÈ¡ËùÓĞÓÃ»§µÄId
+# è·å–æ‰€æœ‰ç”¨æˆ·çš„id
 def GetAllUserIds():
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
 
     Cursor_.execute("SELECT userId FROM user_chat_info")
 
-    # ×ªÎªÁĞ±í²¢½«int×ªÎªstr
+    # å°†æ‰€æœ‰ç”¨æˆ·çš„idè½¬ä¸ºåˆ—è¡¨
     UserIds = [str(row[0]) for row in Cursor_.fetchall()]
 
     return UserIds
 
 
-# ÓëÊı¾İ¿â½¨Á¢Á¬½Ó
+# è·å–æ•°æ®åº“è¿æ¥
 def GetDbConnection():
     if not hasattr(ThreadLocal, "connection"):
         ThreadLocal.connection = sqlite3.connect("data/Yunhu.db")
     return ThreadLocal.connection
 
 
-# »ñÈ¡ÓÃ»§µÄApiKey
+# è·å–ç”¨æˆ·çš„ApiKey
 def GetApiKey(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
@@ -89,14 +91,14 @@ def GetApiKey(UserId):
         return result[0]
 
 
-# ÉèÖÃËùÓĞÓÃ»§µÄÄ¬ÈÏApiKey
+# è®¾ç½®æ‰€æœ‰ç”¨æˆ·çš„é»˜è®¤ApiKey
 def SetDefaultApiKey(Key):
     dotenv.set_key("./data/.env", "DEFAULT_API", Key)
     OpenAI.DefaultApiKey = Key
     dotenv.load_dotenv()
 
 
-# ÓëÊı¾İ¿â¹Ø±ÕÁ¬½Ó
+# å…³é—­æ•°æ®åº“è¿æ¥
 def CloseDbConnections():
     if hasattr(ThreadLocal, "connection"):
         ThreadLocal.connection.close()

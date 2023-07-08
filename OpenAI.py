@@ -11,11 +11,11 @@ dotenv.load_dotenv("data/.env")
 DefaultApiKey = os.getenv("DEFAULT_API")
 OpenApi = Openapi(os.getenv("TOKEN"))
 openai.proxy = os.getenv("PROXY")
+Model = os.getenv("DEFAULT_MODEL")
 
 
 # 获取ChatGPT的回答
 def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
-    global ApiKey
     if ChatType == "user":
         ApiKey = SQLite.GetApiKey(UserId)
     else:
@@ -26,11 +26,11 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
         openai.api_key = ApiKey
     Messages = [{"role": "system",
                  "content": f"You are ChatGPT, a large language model trained by OpenAI.\nKnowledge cutoff: "
-                            f"2021-09\nCurrent date: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"},
+                            f"2021-09"},
                 {"role": "user", "content": Prompt}]
     try:
         Response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo-16k",
+            model=Model,
             messages=Messages,
             temperature=1,
             stream=True
@@ -75,8 +75,6 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
                     ]
                 })
 
-
-
     except openai.error.OpenAIError as e:
         print(e)
         if e.http_status == 429:
@@ -87,6 +85,14 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
             OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
         else:
             OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e.error}"})
+
+
+# 更改模型
+def ChangeModel(in_model):
+    global Model
+    dotenv.set_key("./data/.env", "DEFAULT_MODEL", in_model)
+    Model = in_model
+    dotenv.load_dotenv()
 
 
 # 获取DALL-E的图像(AI绘画)
