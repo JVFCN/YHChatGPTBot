@@ -112,13 +112,18 @@ def onMessageNormalHander(event):
     SenderId = event["sender"]["senderId"]
     SQLite.AddUser(SenderId)
     if Text.startswith('.'):
-        SQLite.ClearUserChat(SenderId)
-        if SenderType != "group":
-            OpenApi.sendMessage(SenderId, "user", "text",
-                                {"text": f"你的上下文已清除"})
-        else:
-            OpenApi.sendMessage(event["chat"]["chatId"], "group", "text",
-                                {"text": f"嘿, {event['sender']['senderNickname']} 你的上下文已清除!"})
+        Parts = Text[1:].split(' ', 1)
+
+        CommandName = Parts[0]  # 解析命令名字
+        CommandContent = Parts[1] if len(Parts) > 1 else None  # 解析命令内容
+        if CommandName == "clear":
+            SQLite.ClearUserChat(SenderId)
+            if SenderType != "group":
+                OpenApi.sendMessage(SenderId, "user", "text",
+                                    {"text": f"你的上下文已清除"})
+            else:
+                OpenApi.sendMessage(event["chat"]["chatId"], "group", "text",
+                                    {"text": f"嘿, {event['sender']['senderNickname']} 你的上下文已清除!"})
         return
     # 处理管理员指令 命令格式:"!命令名字 命令内容"
     if SenderType != "group":
