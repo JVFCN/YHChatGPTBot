@@ -1,6 +1,4 @@
-import ast
 import os
-from pprint import pprint
 
 import dotenv
 import openai

@@ -1,5 +1,4 @@
 import os
-from pprint import pprint
 
 from flask import Flask, request
 from yunhu.subscription import Subscription
