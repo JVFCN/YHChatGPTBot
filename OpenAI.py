@@ -15,6 +15,8 @@ OpenApi = Openapi(os.getenv("TOKEN"))
 openai.proxy = os.getenv("PROXY")
 Model = os.getenv("DEFAULT_MODEL")
 
+openai.api_base = "https://api.mctools.online/v1"
+
 
 # 获取ChatGPT的回答
 def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
@@ -29,7 +31,7 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
     else:
         openai.api_key = ApiKey
 
-    Messages = SQLite.GetUserChat(SenderId)
+    Messages: list = SQLite.GetUserChat(SenderId)
     Messages.append({"role": "user", "content": Prompt})
 
     try:
@@ -52,11 +54,6 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
                             "text": "复制回答",
                             "actionType": 2,
                             "value": AllContent
-                        },
-                        {
-                            "text": "翻译/润色",
-                            "actionType": 3,
-                            "value": f"fan{AllContent}"
                         }
                     ]
                 })
@@ -72,11 +69,6 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
                             "text": "复制回答",
                             "actionType": 2,
                             "value": AllContent
-                        },
-                        {
-                            "text": "翻译/润色",
-                            "actionType": 3,
-                            "value": f"fan{AllContent}"
                         }
                     ]
                 })
@@ -85,8 +77,7 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
         print(e)
         if e.http_status == 429:
             OpenApi.editMessage(MsgId, UserId, ChatType, "text",
-                                {
-                                    "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
+                                {"text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
         elif e.http_status == 401:
             OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
         else:

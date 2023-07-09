@@ -31,6 +31,7 @@ def UpdateApiKey(UserId, NewApiKey):
     Connection_.commit()
 
 
+# 更新用户的上下文
 def UpdateUserChat(UserId, UpdatedChat):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
@@ -43,15 +44,16 @@ def UpdateUserChat(UserId, UpdatedChat):
     Connection_.commit()
 
 
+# 获取用户的上下文
 def GetUserChat(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
     Cursor_.execute("SELECT chat FROM user_chat_info WHERE userId=?", (UserId,))
     result = Cursor_.fetchone()
-    chat_history = ast.literal_eval(result[0])
-    last_3_dialogs = chat_history[-6:]  # 获取最后6个元素，包括系统/用户/助手的交互
-    print(last_3_dialogs)
-    return last_3_dialogs
+    ChatHistory = ast.literal_eval(result[0])
+    if len(ChatHistory) > 6:
+        ChatHistory.pop(1)
+    return ChatHistory
 
 
 # 添加用户
@@ -71,6 +73,42 @@ def SetUserPermission(UserId, IsAdmin):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
     Cursor_.execute("UPDATE user_chat_info SET admin=? WHERE userId=?", (IsAdmin, UserId))
+    Connection_.commit()
+
+
+# 清除所有用户的上下文
+def ClearAllUsersChat():
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    # 获取所有用户ID
+    Cursor_.execute("SELECT userId FROM user_chat_info")
+    UserIds = Cursor_.fetchall()
+
+    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]"
+
+    # 遍历用户ID并清除聊天记录
+    for user_id in UserIds:
+        Cursor_.execute(
+            "UPDATE user_chat_info SET chat = ? WHERE userId = ?",
+            (DefaultContext, user_id[0])
+        )
+
+    Connection_.commit()
+
+
+# 清除用户的上下文(到默认状态)
+def ClearUserChat(UserId):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]"
+
+    Cursor_.execute(
+        "UPDATE user_chat_info SET chat = ? WHERE userId = ?",
+        (DefaultContext, UserId)
+    )
+
     Connection_.commit()
 
 

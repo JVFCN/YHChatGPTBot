@@ -1,4 +1,6 @@
 import os
+from pprint import pprint
+
 from flask import Flask, request
 from yunhu.subscription import Subscription
 from yunhu.openapi import Openapi
@@ -109,6 +111,15 @@ def onMessageNormalHander(event):
     Text = event["message"]["content"]["text"]
     SenderId = event["sender"]["senderId"]
     SQLite.AddUser(SenderId)
+    if Text.startswith('.'):
+        SQLite.ClearUserChat(SenderId)
+        if SenderType != "group":
+            OpenApi.sendMessage(SenderId, "user", "text",
+                                {"text": f"你的上下文已清除"})
+        else:
+            OpenApi.sendMessage(event["chat"]["chatId"], "group", "text",
+                                {"text": f"嘿, {event['sender']['senderNickname']} 你的上下文已清除!"})
+        return
     # 处理管理员指令 命令格式:"!命令名字 命令内容"
     if SenderType != "group":
         if not Text.startswith('!'):
@@ -147,12 +158,15 @@ def onMessageNormalHander(event):
                     return
                 SQLite.AddUser(CommandContent)
                 return
+            # 添加管理员命令
             elif CommandName == "addSu" and SenderId == "3161064":
                 SQLite.SetUserPermission(CommandContent, True)
                 return
+            # 删除管理员命令
             elif CommandName == "cutSu" and SenderId == "3161064":
                 SQLite.SetUserPermission(CommandContent, False)
                 return
+            # 更换默认模型命令
             elif CommandName == "ChangeModel":
                 if not SQLite.CheckUserPermission(SenderId):
                     OpenApi.sendMessage(SenderId, "user", "text",
@@ -162,6 +176,17 @@ def onMessageNormalHander(event):
                     OpenAI.ChangeModel(CommandContent)
                     OpenApi.sendMessage(SenderId, "user", "text",
                                         {"text": "模型已更改"})
+                    return
+            # 清理上下文命令
+            elif CommandName == "clear":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text",
+                                        {"text": "您无权执行此命令"})
+                    return
+                else:
+                    SQLite.ClearAllUsersChat()
+                    OpenApi.sendMessage(SenderId, "user", "text",
+                                        {"text": "所有用户的上下文已清除"})
                     return
     # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
     else:
@@ -179,7 +204,6 @@ def onMessageNormalHander(event):
         # 判断@的对象是否符合回答要求
         if Name == "bot" or Name == "ChatGPTBot" or Name == "gpt" or Name == "GPT":
             Res = OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown", {"text": "Working..."})
-
             MsgId = Res.json()["data"]["messageInfo"]["msgId"]
             OpenAI.GetChatGPTAnswer(Text, event["chat"]["chatId"], MsgId, "group", SenderId)
 
