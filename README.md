@@ -1,4 +1,4 @@
-# <p align="center">云湖ChatGPT机器人</p>
+# <p align="center">云湖ChatGPT机器人<sub>(免费GPT4)</sub></p>
 <p align="center">我的云湖ID:3161064  机器人ID:85080390</p>
 
 当前功能:
