@@ -1,4 +1,4 @@
-# <p align="center">云湖ChatGPT机器人<sub>(免费GPT4)</sub></p>
+# <p align="center">[云湖](https://www.yhchat.com)ChatGPT机器人<sub>(免费GPT4)</sub></p>
 <p align="center">我的云湖ID:3161064  机器人ID:85080390</p>
 
 当前功能:
@@ -49,3 +49,7 @@ proxy键入你的代理IP, 如果你用的是Clash, 那么默认端口是7890, �
 
 
 [云湖官网](https://wwww.yhchat.com)
+
+
+感谢名单:
+来自云湖的"云湖团队"(云湖ID:9428149), 捐赠了10人民币
