@@ -44,6 +44,8 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
 
         for chunk in Response:
             Num += 1
+            if Num == 1:
+                continue
             if chunk["choices"][0]["finish_reason"] == "stop":
                 OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
                     "text": AllContent,
