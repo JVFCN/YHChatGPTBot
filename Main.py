@@ -1,5 +1,8 @@
+import json
 import os
+import threading
 
+import requests
 from flask import Flask, request
 from yunhu.subscription import Subscription
 from yunhu.openapi import Openapi
@@ -101,6 +104,47 @@ def onMsgInstruction(event):
             OpenApi.sendMessage(SenderId, "user", "text", {"text": "已重置APIKey"})
         else:
             OpenApi.sendMessage(ChatId, "group", "text", {"text": "已重置APIKey"})
+    elif CmdId == 376 or CmdName == "换模型":
+        if ChatType != "group":
+            OpenApi.sendMessage(SenderId, "user", "text", {"text": "选择模型",
+                                                           "buttons": [
+                                                               {
+                                                                   "text": "GPT4",
+                                                                   "actionType": 3,
+                                                                   "value": "gpt-4"
+                                                               },
+                                                               {
+                                                                   "text": "GPT3.5-turbo",
+                                                                   "actionType": 3,
+                                                                   "value": "gpt-3.5-turbo"
+                                                               },
+                                                               {
+                                                                   "text": "GPT3.5-turbo-16k",
+                                                                   "actionType": 3,
+                                                                   "value": "gpt-3.5-turbo-16k"
+                                                               }
+                                                           ]
+                                                           })
+        else:
+            OpenApi.sendMessage(ChatId, "group", "text", {"text": "选择模型",
+                                                          "buttons": [
+                                                              {
+                                                                  "text": "GPT4",
+                                                                  "actionType": 3,
+                                                                  "value": "gpt-4"
+                                                              },
+                                                              {
+                                                                  "text": "GPT3.5-turbo",
+                                                                  "actionType": 3,
+                                                                  "value": "gpt-3.5-turbo"
+                                                              },
+                                                              {
+                                                                  "text": "GPT3.5-turbo-16k",
+                                                                  "actionType": 3,
+                                                                  "value": "gpt-3.5-turbo-16k"
+                                                              }
+                                                          ]
+                                                          })
 
 
 # 接收普通消息处理
@@ -123,13 +167,77 @@ def onMessageNormalHander(event):
             else:
                 OpenApi.sendMessage(event["chat"]["chatId"], "group", "text",
                                     {"text": f"嘿, {event['sender']['senderNickname']} 你的上下文已清除!"})
-        return
+            return
+        elif CommandName == "help":
+            if SenderType != "group":
+                OpenApi.sendMessage(SenderId, "user", "markdown",
+                                    {
+                                        "text": f"1.输入`.clear`清空上下文(上下文保存三段对话\n2.输入`.ChangeModel`切换模型)\n3.输入`.Model`查看自己的模型"})
+            else:
+                OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown",
+                                    {
+                                        "text": f"1.输入`.clear`清空上下文(上下文保存三段对话\n2.输入`.ChangeModel`切换模型)\n3.输入`.Model`查看自己的模型"})
+            return
+        elif CommandName == "ChangeModel":
+            if SenderId != "group":
+                OpenApi.sendMessage(SenderId, "user", "text", {"text": "选择模型",
+                                                               "buttons": [
+                                                                   {
+                                                                       "text": "GPT4",
+                                                                       "actionType": 3,
+                                                                       "value": "gpt-4"
+                                                                   },
+                                                                   {
+                                                                       "text": "GPT3.5-turbo",
+                                                                       "actionType": 3,
+                                                                       "value": "gpt-3.5-turbo"
+                                                                   },
+                                                                   {
+                                                                       "text": "GPT3.5-turbo-16k",
+                                                                       "actionType": 3,
+                                                                       "value": "gpt-3.5-turbo-16k"
+                                                                   }
+                                                               ]
+                                                               })
+            else:
+                OpenApi.sendMessage(event["chat"]["chatId"], "group", "text", {"text": "选择模型",
+                                                                               "buttons": [
+                                                                                   {
+                                                                                       "text": "GPT4",
+                                                                                       "actionType": 3,
+                                                                                       "value": "gpt-4"
+                                                                                   },
+                                                                                   {
+                                                                                       "text": "GPT3.5-turbo",
+                                                                                       "actionType": 3,
+                                                                                       "value": "gpt-3.5-turbo"
+                                                                                   },
+                                                                                   {
+                                                                                       "text": "GPT3.5-turbo-16k",
+                                                                                       "actionType": 3,
+                                                                                       "value": "gpt-3.5-turbo-16k"
+                                                                                   }
+                                                                               ]
+                                                                               })
+            return
+        elif CommandName == "Model":
+            Model = SQLite.GetUserModel(SenderId)
+            if SenderType != "group":
+                OpenApi.sendMessage(SenderId, "user", "markdown",
+                                    {
+                                        "text": f"你使用的模型是{Model}"})
+            else:
+                OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown",
+                                    {
+                                        "text": f"你使用的模型是{Model}"})
+            return
+
     # 处理管理员指令 命令格式:"!命令名字 命令内容"
     if SenderType != "group":
         if not Text.startswith('!'):
             Res = OpenApi.sendMessage(SenderId, "user", "markdown", {"text": "Working..."})
             MsgId = Res.json()["data"]["messageInfo"]["msgId"]
-            OpenAI.GetChatGPTAnswer(Text, SenderId, MsgId, "user", SenderId)
+            OpenAI.GetChatGPTAnswerNoStream(Text, SenderId, MsgId, "user", SenderId)
         else:
             Parts = Text[1:].split(' ', 1)
 
@@ -192,6 +300,13 @@ def onMessageNormalHander(event):
                     OpenApi.sendMessage(SenderId, "user", "text",
                                         {"text": "所有用户的上下文已清除"})
                     return
+            elif CommandName == "SetBoard":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
+                    return
+                else:
+                    setAllUserBoard("text", CommandContent)
+                    return
     # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
     else:
         # 从消息中找到@的对象
@@ -209,7 +324,7 @@ def onMessageNormalHander(event):
         if Name == "bot" or Name == "ChatGPTBot" or Name == "gpt" or Name == "GPT":
             Res = OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown", {"text": "Working..."})
             MsgId = Res.json()["data"]["messageInfo"]["msgId"]
-            OpenAI.GetChatGPTAnswer(Text, event["chat"]["chatId"], MsgId, "group", SenderId)
+            OpenAI.GetChatGPTAnswerNoStream(Text, event["chat"]["chatId"], MsgId, "group", SenderId)
 
 
 # 加群通知(欢迎)
@@ -219,7 +334,7 @@ def onGroupJoinHandler(event):
     Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
     MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-    OpenAI.GetChatGPTAnswer(
+    OpenAI.GetChatGPTAnswerNoStream(
         f"有一位新成员进入了我们的群聊,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来",
         event["chatId"], MsgId, "group", event["userId"])
 
@@ -230,7 +345,7 @@ def onGroupLeaveHandler(event):
     Msg = OpenApi.sendMessage(event["chatId"], "group", "markdown", {"text": "Working..."})
     MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-    OpenAI.GetChatGPTAnswer(
+    OpenAI.GetChatGPTAnswerNoStream(
         f"有一位成员退出了我们的群聊,请你随机用一种方式和语气送别'{event['nickname']}'这位成员",
         event["chatId"], MsgId, "group", event["userId"])
 
@@ -241,7 +356,7 @@ def onBotFollowedHandler(event):
     Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
     MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
-    OpenAI.GetChatGPTAnswer(
+    OpenAI.GetChatGPTAnswerNoStream(
         f"有一位新成员添加了你的好友,请你随机用一种方式和语气欢迎新成员{event['nickname']}的到来, 并简单介绍自己",
         event["userId"], MsgId, "user", event["userId"])
 
@@ -249,18 +364,43 @@ def onBotFollowedHandler(event):
 # 按钮点击事件处理
 @Sub.onButtonReportInline
 def onButtonReportInlineHandler(event):
+    Value = event["value"]
+    UserId = event["userId"]
+    MsgId = event["msgId"]
+    RecvId = event["recvId"]
+    RecvType = event["recvType"]
     # 隐藏ApiKey
-    if event["value"][0:6] == "ApiKey":
-        Key = event["value"][6:]
-        OpenApi.editMessage(event["msgId"], event["recvId"], event["recvType"], "text", {
+    if Value[0:6] == "ApiKey":
+        Key = Value[6:]
+        OpenApi.editMessage(MsgId, RecvId, RecvType, "text", {
             "text": Key[:8] + '*' * (len(Key) - 12) + Key[-4:]
         })
     # 翻译/润色
-    elif event["value"][0:3] == "fan":
-        if langdetect.detect(event['value'][3:]) != "zh-cn":
-            OpenAI.GetChatGPTAnswer(
-                f"'{event['value'][3:]}'\n请把上面这段话翻译成中文, 要信达雅",
-                event["recvId"], event["msgId"], event["recvType"], event["userId"])
+    elif Value[0:3] == "fan":
+        if langdetect.detect(Value[3:]) != "zh-cn":
+            OpenAI.GetChatGPTAnswerNoStream(
+                f"'{Value[3:]}'\n请把上面这段话翻译成中文, 要信达雅",
+                RecvId, MsgId, RecvType, UserId)
+    elif Value == "gpt-4":
+        SQLite.SetUserModel(UserId, Value)
+        OpenApi.sendMessage(RecvId, RecvType, "text", {"text": "模型已更改"})
+    elif Value == "gpt-3.5-turbo":
+        SQLite.SetUserModel(UserId, Value)
+        OpenApi.sendMessage(RecvId, RecvType, "text", {"text": "模型已更改"})
+    elif Value == "gpt-3.5-turbo-16k":
+        SQLite.SetUserModel(UserId, Value)
+        OpenApi.sendMessage(RecvId, RecvType, "text", {"text": "模型已更改"})
+
+
+def setAllUserBoard(contentType: str, content: str):
+    params = {
+        "contentType": contentType,
+        "content": content
+    }
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    dotenv.load_dotenv("data/.env")
+    requests.post(f"{Openapi.baseUrl}/bot/board-all?token={os.getenv('TOKEN')}", headers=headers,
+                  data=json.dumps(params))
 
 
 # 运行程序(启动机器人)

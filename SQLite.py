@@ -14,9 +14,34 @@ Cursor.execute(
     "userId INTEGER PRIMARY KEY,"
     "api_key TEXT NOT NULL DEFAULT 'defaultAPIKEY',"
     "admin BOOLEAN NOT NULL DEFAULT FALSE,"
-    "chat TEXT NOT NULL DEFAULT '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]')"
+    "chat TEXT NOT NULL DEFAULT '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]',"
+    "model TEXT NOT NULL DEFAULT 'gpt-3.5-turbo'"
+    ")"
 )
 Connection.commit()
+
+
+# 获取用户的模型
+def GetUserModel(UserId):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    Cursor_.execute(
+        "SELECT model FROM user_chat_info WHERE userId=?", (UserId,)
+    )
+    result = Cursor_.fetchone()
+    return result[0]
+
+
+# 更改用户的模型
+def SetUserModel(UserId, Model):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    Cursor_.execute(
+        "UPDATE user_chat_info SET model = ? WHERE userId=?", (Model, UserId,)
+    )
+    Connection_.commit()
 
 
 # 更新用户的ApiKey

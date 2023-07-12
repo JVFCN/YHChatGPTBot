@@ -19,6 +19,7 @@ openai.api_base = "https://api.mctools.online/v1"
 # 获取ChatGPT的回答
 def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
     global AllContent
+    print(f"[OA]{MsgId}")
     if ChatType == "user":
         ApiKey = SQLite.GetApiKey(UserId)
     else:
@@ -77,7 +78,57 @@ def GetChatGPTAnswer(Prompt, UserId, MsgId, ChatType, SenderId):
         print(e)
         if e.http_status == 429:
             OpenApi.editMessage(MsgId, UserId, ChatType, "text",
-                                {"text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
+                                {
+                                    "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
+        elif e.http_status == 401:
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
+        else:
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e.error}"})
+
+
+def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
+    global AllContent
+    if ChatType == "user":
+        ApiKey = SQLite.GetApiKey(UserId)
+    else:
+        ApiKey = SQLite.GetApiKey(SenderId)
+
+    if ApiKey == "defaultAPIKEY":
+        openai.api_key = DefaultApiKey
+    else:
+        openai.api_key = ApiKey
+
+    Messages: list = SQLite.GetUserChat(SenderId)
+    Messages.append({"role": "user", "content": Prompt})
+    print(SQLite.GetUserModel(UserId))
+
+    try:
+        Response = openai.ChatCompletion.create(
+            model=SQLite.GetUserModel(UserId),
+            messages=Messages,
+            temperature=1,
+            stream=False
+        )
+        print(Response)
+        Text = Response["choices"][0]["message"]["content"]
+        OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
+            "text": Text,
+            "buttons": [
+                {
+                    "text": "复制回答",
+                    "actionType": 2,
+                    "value": Response["choices"][0]["message"]["content"]
+                }
+            ]
+        }
+                            )
+
+    except openai.error.OpenAIError as e:
+        print(e)
+        if e.http_status == 429:
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text",
+                                {
+                                    "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
         elif e.http_status == 401:
             OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
         else:
