@@ -1,4 +1,4 @@
-# <p align="center">[云湖](https://www.yhchat.com)ChatGPT机器人<sub>(免费GPT4)</sub></p>
+# <p align="center">[云湖](https://www.yhchat.com)[ChatGPT](https://ai.com)机器人<sub>(免费GPT4)</sub></p>
 <p align="center">我的云湖ID:3161064  机器人ID:85080390</p>
 
 当前功能:
