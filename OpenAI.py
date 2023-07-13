@@ -86,17 +86,11 @@ openai.api_base = "https://api.mctools.online/v1"
 #             OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e.error}"})
 
 
+# 获取ChatGPT的回答
 def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
     global AllContent
-    if ChatType == "user":
-        ApiKey = SQLite.GetApiKey(UserId)
-    else:
-        ApiKey = SQLite.GetApiKey(SenderId)
-
-    if ApiKey == "defaultAPIKEY":
-        openai.api_key = DefaultApiKey
-    else:
-        openai.api_key = ApiKey
+    ApiKey = SQLite.GetApiKey(UserId) if ChatType == "user" else SQLite.GetApiKey(SenderId)
+    openai.api_key = DefaultApiKey if ApiKey == "defaultAPIKEY" else ApiKey
 
     Messages: list = SQLite.GetUserChat(SenderId)
     Messages.append({"role": "user", "content": Prompt})
@@ -106,10 +100,10 @@ def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
             model=SQLite.GetUserModel(UserId),
             messages=Messages,
             temperature=1,
-            timeout=99999999,
+            timeout=99999999999,
             stream=False
         )
-        print(Response)
+
         Text = Response["choices"][0]["message"]["content"]
         OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
             "text": Text,
