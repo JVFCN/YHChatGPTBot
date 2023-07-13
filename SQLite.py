@@ -86,10 +86,28 @@ def AddUser(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
     Cursor_.execute(
-        "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat) VALUES (?, ?, ?, ?)",
+        "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat, model) VALUES (?, ?, ?, ?,?)",
         (UserId, "defaultAPIKEY", False,
-         '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]')
+         '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]',
+         "gpt-3.5-turbo"
+         )
     )
+    Connection_.commit()
+
+
+# 重置所有用户的模型
+def SetAllUserModel():
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+    Cursor_.execute("SELECT userId FROM user_chat_info")
+    UserIds = Cursor_.fetchall()
+
+    for user_id in UserIds:
+        Cursor_.execute(
+            "UPDATE user_chat_info SET model = ? WHERE userId = ?",
+            ("gpt-3.5-turbo", user_id[0])
+        )
+
     Connection_.commit()
 
 

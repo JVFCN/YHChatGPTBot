@@ -1,7 +1,5 @@
 import json
 import os
-import threading
-
 import requests
 from flask import Flask, request
 from yunhu.subscription import Subscription
@@ -307,6 +305,13 @@ def onMessageNormalHander(event):
                 else:
                     setAllUserBoard("text", CommandContent)
                     return
+            elif CommandName == "ChangeModel":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
+                    return
+                else:
+                    SQLite.SetAllUserModel()
+                    return
     # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
     else:
         # 从消息中找到@的对象
@@ -330,6 +335,7 @@ def onMessageNormalHander(event):
 # 加群通知(欢迎)
 @Sub.onGroupJoin
 def onGroupJoinHandler(event):
+    print(event)
     SQLite.AddUser(event["userId"])
     Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
     MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
@@ -390,6 +396,9 @@ def onButtonReportInlineHandler(event):
     elif Value == "gpt-3.5-turbo-16k":
         SQLite.SetUserModel(UserId, Value)
         OpenApi.sendMessage(RecvId, RecvType, "text", {"text": "模型已更改"})
+    elif Value[:10] == "AgainReply":
+        OpenApi.editMessage(MsgId, RecvId, RecvType, "markdown", {"text": f"正在为`{Value[10:]}`重新生成响应"})
+        OpenAI.GetChatGPTAnswerNoStream(Value[10:], UserId, MsgId, RecvType, UserId)
 
 
 def setAllUserBoard(contentType: str, content: str):
