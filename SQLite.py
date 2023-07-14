@@ -76,6 +76,7 @@ def GetUserChat(UserId):
     ChatHistory = ast.literal_eval(result[0])
     if len(ChatHistory) > 6:  # 限制最大长度6
         ChatHistory.pop(1)  # 删除第一个元素
+    print(ChatHistory)
     return ChatHistory  # 返回聊天记录
 
 

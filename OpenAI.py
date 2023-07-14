@@ -122,8 +122,9 @@ def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
                     "value": f"AgainReply{Prompt}"
                 }
             ]
-        }
-                            )
+        })
+        Messages.append({"role": "assistant", "content": Text})
+        SQLite.UpdateUserChat(SenderId, Messages)
 
     except openai.error.OpenAIError as e:
         print(e)
