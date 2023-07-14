@@ -17,7 +17,7 @@ Cursor.execute(
     "chat TEXT NOT NULL DEFAULT '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]',"
     "model TEXT NOT NULL DEFAULT 'gpt-3.5-turbo'"
     ")"
-)
+)  # 创建用户聊天信息表
 Connection.commit()
 
 
@@ -26,9 +26,7 @@ def GetUserModel(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
 
-    Cursor_.execute(
-        "SELECT model FROM user_chat_info WHERE userId=?", (UserId,)
-    )
+    Cursor_.execute("SELECT model FROM user_chat_info WHERE userId=?", (UserId,))  # 获取模型
     result = Cursor_.fetchone()
     return result[0]
 
@@ -40,7 +38,7 @@ def SetUserModel(UserId, Model):
 
     Cursor_.execute(
         "UPDATE user_chat_info SET model = ? WHERE userId=?", (Model, UserId,)
-    )
+    )  # 更新模型
     Connection_.commit()
 
 
@@ -52,7 +50,7 @@ def UpdateApiKey(UserId, NewApiKey):
     Cursor_.execute(
         "UPDATE user_chat_info SET api_key = ? WHERE userId = ?",
         (NewApiKey, UserId)
-    )
+    )  # 更新ApiKey
     Connection_.commit()
 
 
@@ -61,11 +59,11 @@ def UpdateUserChat(UserId, UpdatedChat):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
 
-    chat_string = str(UpdatedChat)
+    ChatString = str(UpdatedChat)  # 转换为字符串
     Cursor_.execute(
         "UPDATE user_chat_info SET chat = ? WHERE userId = ?",
-        (chat_string, UserId)
-    )
+        (ChatString, UserId)
+    )  # 更新聊天记录
     Connection_.commit()
 
 
@@ -73,12 +71,12 @@ def UpdateUserChat(UserId, UpdatedChat):
 def GetUserChat(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
-    Cursor_.execute("SELECT chat FROM user_chat_info WHERE userId=?", (UserId,))
+    Cursor_.execute("SELECT chat FROM user_chat_info WHERE userId=?", (UserId,))  # 获取聊天记录
     result = Cursor_.fetchone()
     ChatHistory = ast.literal_eval(result[0])
-    if len(ChatHistory) > 6:
-        ChatHistory.pop(1)
-    return ChatHistory
+    if len(ChatHistory) > 6:  # 限制最大长度6
+        ChatHistory.pop(1)  # 删除第一个元素
+    return ChatHistory  # 返回聊天记录
 
 
 # 添加用户
@@ -88,7 +86,8 @@ def AddUser(UserId):
     Cursor_.execute(
         "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat, model) VALUES (?, ?, ?, ?,?)",
         (UserId, "defaultAPIKEY", False,
-         '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]',
+         '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge '
+         'cutoff: 2021-09\"}]',
          "gpt-3.5-turbo"
          )
     )
@@ -128,7 +127,8 @@ def ClearAllUsersChat():
     Cursor_.execute("SELECT userId FROM user_chat_info")
     UserIds = Cursor_.fetchall()
 
-    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]"
+    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by " \
+                     "OpenAI.Knowledge cutoff: 2021-09\"}]"
 
     # 遍历用户ID并清除聊天记录
     for user_id in UserIds:
@@ -145,7 +145,8 @@ def ClearUserChat(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
 
-    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]"
+    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by " \
+                     "OpenAI.Knowledge cutoff: 2021-09\"}]"
 
     Cursor_.execute(
         "UPDATE user_chat_info SET chat = ? WHERE userId = ?",

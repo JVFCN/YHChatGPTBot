@@ -145,6 +145,13 @@ def onMsgInstruction(event):
                                                           })
 
 
+Help = "1.输入`.clear`清空上下文(上下文保存三段对话\n2.输入`.ChangeModel`切换模型)\n3.输入`.Model`查看自己的模型\n\n管理员命令:\n`!SetBoard`设置看板内容\n" \
+       "`!post`发布公告\n`!clear`清空所有用户上下文" \
+       "\n问卷:https://forms.office.com/r/LyvWu6yrti\n机器人有问题请随时用反馈功能/Bug指令进行反馈\nWindows/MacOS上输入`/`即可看到指令\nAndroid/iOS" \
+       "上点击发送键左边那个按钮即可" \
+       "\n\n开发者云湖ID:3161064\n邮箱:j3280891657@gmail/qq/outlook.com\n\n需要官网账号/Api的请联系开发者\n\n"
+
+
 # 接收普通消息处理
 @Sub.onMessageNormal
 def onMessageNormalHander(event):
@@ -170,11 +177,11 @@ def onMessageNormalHander(event):
             if SenderType != "group":
                 OpenApi.sendMessage(SenderId, "user", "markdown",
                                     {
-                                        "text": f"1.输入`.clear`清空上下文(上下文保存三段对话\n2.输入`.ChangeModel`切换模型)\n3.输入`.Model`查看自己的模型"})
+                                        "text": Help})
             else:
                 OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown",
                                     {
-                                        "text": f"1.输入`.clear`清空上下文(上下文保存三段对话\n2.输入`.ChangeModel`切换模型)\n3.输入`.Model`查看自己的模型"})
+                                        "text": Help})
             return
         elif CommandName == "ChangeModel":
             if SenderId != "group":
@@ -289,7 +296,7 @@ def onMessageNormalHander(event):
                     return
             # 清理上下文命令
             elif CommandName == "clear":
-                if not SQLite.CheckUserPermission(SenderId):
+                if not SQLite.CheckUserPermission(SenderId):  # 检查权限
                     OpenApi.sendMessage(SenderId, "user", "text",
                                         {"text": "您无权执行此命令"})
                     return
@@ -303,7 +310,7 @@ def onMessageNormalHander(event):
                     OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
                     return
                 else:
-                    setAllUserBoard("text", CommandContent)
+                    SetAllUserBoard("text", CommandContent)
                     return
             elif CommandName == "ChangeModel":
                 if not SQLite.CheckUserPermission(SenderId):
@@ -401,7 +408,7 @@ def onButtonReportInlineHandler(event):
         OpenAI.GetChatGPTAnswerNoStream(Value[10:], UserId, MsgId, RecvType, UserId)
 
 
-def setAllUserBoard(contentType: str, content: str):
+def SetAllUserBoard(contentType: str, content: str):
     params = {
         "contentType": contentType,
         "content": content

@@ -88,19 +88,17 @@ openai.api_base = "https://api.mctools.online/v1"
 
 # 获取ChatGPT的回答
 def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
-    global AllContent
     ApiKey = SQLite.GetApiKey(UserId) if ChatType == "user" else SQLite.GetApiKey(SenderId)
     openai.api_key = DefaultApiKey if ApiKey == "defaultAPIKEY" else ApiKey
 
-    Messages: list = SQLite.GetUserChat(SenderId)
-    Messages.append({"role": "user", "content": Prompt})
+    Messages: list = SQLite.GetUserChat(SenderId)  # 获取用户聊天记录
+    Messages.append({"role": "user", "content": Prompt})  # 添加用户输入
 
     try:
         Response = openai.ChatCompletion.create(
-            model=SQLite.GetUserModel(UserId),
+            model=SQLite.GetUserModel(SenderId),
             messages=Messages,
             temperature=1,
-            timeout=99999999999,
             stream=False
         )
 
@@ -129,13 +127,13 @@ def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
 
     except openai.error.OpenAIError as e:
         print(e)
-        if e.http_status == 429:
+        if e.http_status == 429:  # 速率限制
             OpenApi.editMessage(MsgId, UserId, ChatType, "text",
                                 {
                                     "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
-        elif e.http_status == 401:
+        elif e.http_status == 401:  # ApiKey错误
             OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
-        else:
+        else:  # 未知错误
             OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e.error}"})
 
 
@@ -147,13 +145,10 @@ def ChangeModel(in_model):
     dotenv.load_dotenv()
 
 
-# 获取DALL-E的图像(AI绘画)
+# 获取DALL-E的图像(AI绘画) 1024x1024
 def GetDALLEImg(Prompt, UserId):
     ApiKey = SQLite.GetApiKey(UserId)
-    if ApiKey == "defaultAPIKEY":
-        openai.api_key = DefaultApiKey
-    else:
-        openai.api_key = ApiKey
+    openai.api_key = DefaultApiKey if ApiKey == "defaultAPIKEY" else ApiKey
 
     try:
         Response = openai.Image.create(
