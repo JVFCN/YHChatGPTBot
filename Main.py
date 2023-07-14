@@ -342,7 +342,6 @@ def onMessageNormalHander(event):
 # 加群通知(欢迎)
 @Sub.onGroupJoin
 def onGroupJoinHandler(event):
-    print(event)
     SQLite.AddUser(event["userId"])
     Msg = OpenApi.sendMessage(event["chatId"], "group", "text", {"text": "Working..."})
     MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
@@ -366,6 +365,7 @@ def onGroupLeaveHandler(event):
 # 添加机器人好友通知(打招呼)
 @Sub.onBotFollowed
 def onBotFollowedHandler(event):
+    SQLite.AddUser(event["userId"])
     Msg = OpenApi.sendMessage(event["userId"], "user", "markdown", {"text": "Working..."})
     MsgId = Msg.json()["data"]["messageInfo"]["msgId"]
 
