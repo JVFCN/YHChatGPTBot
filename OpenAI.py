@@ -1,4 +1,5 @@
 import os
+import time
 
 import dotenv
 import openai
@@ -88,6 +89,37 @@ openai.api_base = "https://api.mctools.online/v1"
 
 # 获取ChatGPT的回答
 def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
+    if SQLite.GetUserModel(SenderId) == "gpt-4" or SQLite.GetUserModel(SenderId) == "gpt-4-32k":
+        if not SQLite.IsPremium(UserId):
+            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
+                "text": "您不是高级用户, 无法使用该模型",
+                "buttons": [
+                    [
+                        {
+                            "text": "购买会员",
+                            "actionType": 3,
+                            "value": f"buy{SenderId}|{ChatType}"
+                        }
+                    ]
+                ]
+            })
+            return
+        else:
+            if SQLite.GetPremiumExpire(SenderId) < time.time():
+                SQLite.SetPremium(SenderId, False, 0)
+                OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
+                    "text": "您的会员已过期, 无法使用该模型",
+                    "buttons": [
+                        [
+                            {
+                                "text": "续费会员",
+                                "actionType": 3,
+                                "value": f"buy{SenderId}|{ChatType}"
+                            }
+                        ]
+                    ]
+                })
+                return
     ApiKey = SQLite.GetApiKey(UserId) if ChatType == "user" else SQLite.GetApiKey(SenderId)
     openai.api_key = DefaultApiKey if ApiKey == "defaultAPIKEY" else ApiKey
 

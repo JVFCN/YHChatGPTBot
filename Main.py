@@ -1,13 +1,16 @@
 import json
 import os
-import requests
-from flask import Flask, request
-from yunhu.subscription import Subscription
-from yunhu.openapi import Openapi
-import SQLite
-import OpenAI
+import time
+
 import dotenv
 import langdetect
+import requests
+from flask import Flask, request
+from yunhu.openapi import Openapi
+from yunhu.subscription import Subscription
+
+import OpenAI
+import SQLite
 
 # init
 dotenv.load_dotenv()
@@ -44,12 +47,12 @@ def onMsgInstruction(event):
         ImgUrl = OpenAI.GetDALLEImg(SenderText, SenderId)
         if ChatType == "group":
             if ImgUrl[:6] == "错误,请重试":
-                OpenApi.sendMessage(ChatId, "group", "text", {ImgUrl})
+                OpenApi.sendMessage(ChatId, "group", "text", {"text": ImgUrl})
             else:
                 OpenApi.sendMessage(ChatId, "group", "image", {"imageUrl": ImgUrl})
         else:
             if ImgUrl[:6] == "错误,请重试":
-                OpenApi.sendMessage(ChatId, "user", "text", {ImgUrl})
+                OpenApi.sendMessage(ChatId, "user", "text", {"text": ImgUrl})
             else:
                 OpenApi.sendMessage(SenderId, "user", "image", {"imageUrl": ImgUrl})
     elif CmdId == 351 or CmdName == "查看APIKey":
@@ -112,6 +115,11 @@ def onMsgInstruction(event):
                                                                    "value": "gpt-4"
                                                                },
                                                                {
+                                                                   "text": "GPT4-32k",
+                                                                   "actionType": 3,
+                                                                   "value": "gpt-4-32k"
+                                                               },
+                                                               {
                                                                    "text": "GPT3.5-turbo",
                                                                    "actionType": 3,
                                                                    "value": "gpt-3.5-turbo"
@@ -132,6 +140,11 @@ def onMsgInstruction(event):
                                                                   "value": "gpt-4"
                                                               },
                                                               {
+                                                                  "text": "GPT4-32k",
+                                                                  "actionType": 3,
+                                                                  "value": "gpt-4-32k"
+                                                              },
+                                                              {
                                                                   "text": "GPT3.5-turbo",
                                                                   "actionType": 3,
                                                                   "value": "gpt-3.5-turbo"
@@ -145,11 +158,12 @@ def onMsgInstruction(event):
                                                           })
 
 
-Help = "1.输入`.clear`清空上下文(上下文保存三段对话\n2.输入`.ChangeModel`切换模型)\n3.输入`.Model`查看自己的模型\n\n管理员命令:\n`!SetBoard`设置看板内容\n" \
-       "`!post`发布公告\n`!clear`清空所有用户上下文" \
-       "\n问卷:https://forms.office.com/r/LyvWu6yrti\n机器人有问题请随时用反馈功能/Bug指令进行反馈\nWindows/MacOS上输入`/`即可看到指令\nAndroid/iOS" \
-       "上点击发送键左边那个按钮即可" \
-       "\n\n开发者云湖ID:3161064\n邮箱:j3280891657@gmail/qq/outlook.com\n\n需要官网账号/Api的请联系开发者\n\n"
+HelpContent = "1.输入`.clear`清空上下文(上下文保存三段对话\n2.输入`.ChangeModel`切换模型)\n3.输入`.Model`查看自己的模型\n4.输入`.Pre`查看自己的会员到期时间\n\n管理员命令:\n`!SetBoard`设置看板内容\n" \
+              "`!post`发布公告\n`!clear`清空所有用户上下文" \
+              "\n问卷:https://forms.office.com/r/LyvWu6yrti\n机器人有问题请随时用反馈功能/Bug指令进行反馈\nWindows/MacOS上输入`/`即可看到指令\nAndroid/iOS" \
+              "上点击发送键左边那个按钮即可" \
+              "\n\n开发者云湖ID:3161064\n邮箱:j3280891657@gmail/qq/outlook.com\n\n需要官网账号/Api的请联系开发者\n\n关于付费版:\n本机器人GPT3.5-turbo, GPT3.5-turbo-16k模型完全免费使用\nGPT4需要充值后使用\n" \
+              "价格:10元/月, 25元/季度, 100元/年\n无限制使用GPT4模型, 以及GPT4-32K模型\n(以后有新的模型也会以最快的速度安排)"
 
 
 # 接收普通消息处理
@@ -177,11 +191,11 @@ def onMessageNormalHander(event):
             if SenderType != "group":
                 OpenApi.sendMessage(SenderId, "user", "markdown",
                                     {
-                                        "text": Help})
+                                        "text": HelpContent})
             else:
                 OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown",
                                     {
-                                        "text": Help})
+                                        "text": HelpContent})
             return
         elif CommandName == "ChangeModel":
             if SenderId != "group":
@@ -191,6 +205,11 @@ def onMessageNormalHander(event):
                                                                        "text": "GPT4",
                                                                        "actionType": 3,
                                                                        "value": "gpt-4"
+                                                                   },
+                                                                   {
+                                                                       "text": "GPT4-32k",
+                                                                       "actionType": 3,
+                                                                       "value": "gpt-4-32k"
                                                                    },
                                                                    {
                                                                        "text": "GPT3.5-turbo",
@@ -211,6 +230,11 @@ def onMessageNormalHander(event):
                                                                                        "text": "GPT4",
                                                                                        "actionType": 3,
                                                                                        "value": "gpt-4"
+                                                                                   },
+                                                                                   {
+                                                                                       "text": "GPT4-32k",
+                                                                                       "actionType": 3,
+                                                                                       "value": "gpt-4-32k"
                                                                                    },
                                                                                    {
                                                                                        "text": "GPT3.5-turbo",
@@ -236,7 +260,44 @@ def onMessageNormalHander(event):
                                     {
                                         "text": f"你使用的模型是{Model}"})
             return
-
+        elif CommandName == "Pre":
+            if SenderType != "group":
+                if int(SQLite.GetPremiumExpire(SenderId)) == 0:
+                    OpenApi.sendMessage(SenderId, "user", "text", {
+                        "text": "你还不是会员, 请先购买会员",
+                        "buttons": [
+                            [
+                                {
+                                    "text": "购买会员",
+                                    "actionType": 3,
+                                    "value": f"buy{SenderId}|user"
+                                }
+                            ]
+                        ]
+                    })
+                    return
+                OpenApi.sendMessage(SenderId, "user", "markdown",
+                                    {
+                                        "text": f"会员到期时间{time.strftime('%Y年%m月%d日', time.localtime(int(SQLite.GetPremiumExpire(SenderId))))}"})
+            else:
+                if int(SQLite.GetPremiumExpire(SenderId)) == 0:
+                    OpenApi.sendMessage(SenderId, "group", "text", {
+                        "text": "你还不是会员, 请先购买会员",
+                        "buttons": [
+                            [
+                                {
+                                    "text": "购买会员",
+                                    "actionType": 3,
+                                    "value": f"buy{SenderId}|group"
+                                }
+                            ]
+                        ]
+                    })
+                    return
+                OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown",
+                                    {
+                                        "text": f"ID{SenderId}的会员到期时间:{time.strftime('%Y年%m月%d日', time.localtime(int(SQLite.GetPremiumExpire(SenderId))))}"})
+        return
     # 处理管理员指令 命令格式:"!命令名字 命令内容"
     if SenderType != "group":
         if not Text.startswith('!'):
@@ -305,6 +366,7 @@ def onMessageNormalHander(event):
                     OpenApi.sendMessage(SenderId, "user", "text",
                                         {"text": "所有用户的上下文已清除"})
                     return
+            # 设置全局看板
             elif CommandName == "SetBoard":
                 if not SQLite.CheckUserPermission(SenderId):
                     OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
@@ -312,6 +374,7 @@ def onMessageNormalHander(event):
                 else:
                     SetAllUserBoard("text", CommandContent)
                     return
+            # 更换所有用户的模型
             elif CommandName == "ChangeModel":
                 if not SQLite.CheckUserPermission(SenderId):
                     OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
@@ -319,6 +382,40 @@ def onMessageNormalHander(event):
                 else:
                     SQLite.SetAllUserModel()
                     return
+            # 设置用户的会员状态
+            elif CommandName == "SetPre":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
+                    return
+                else:
+                    parts = CommandContent.split("|")
+
+                    if len(parts) != 2:
+                        OpenApi.sendMessage(SenderId, "user", "text", {"text": "格式错误"})
+                        return
+                    UserId = parts[0]
+                    ExpireTime = parts[1]
+
+                    # 验证用户ID和时间戳是否为数字
+                    if not UserId.isdigit() or not ExpireTime.isdigit():
+                        OpenApi.sendMessage(SenderId, "user", "text", {"text": "格式错误"})
+                        return
+                    SQLite.SetPremium(UserId, True, ExpireTime)
+                    OpenApi.sendMessage(UserId, "user", "text", {
+                        "text": f"会员充值成功,到期时间为{time.strftime('%Y年%m月%d日', time.localtime(int(ExpireTime)))}"})
+            elif CommandName == "Send":
+                if not SQLite.CheckUserPermission(SenderId):
+                    OpenApi.sendMessage(SenderId, "user", "text", {"text": "您无权执行此命令"})
+                    return
+                else:
+                    parts = CommandContent.split("|")
+
+                    if len(parts) != 3:
+                        OpenApi.sendMessage(SenderId, "user", "text", {"text": "格式错误"})
+                        return
+                    UserId = parts[0]
+                    Content = parts[1]
+                    OpenApi.sendMessage(UserId, "user", "text", {"text": Content})
     # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
     else:
         # 从消息中找到@的对象
@@ -406,6 +503,12 @@ def onButtonReportInlineHandler(event):
     elif Value[:10] == "AgainReply":
         OpenApi.editMessage(MsgId, RecvId, RecvType, "markdown", {"text": f"正在为`{Value[10:]}`重新生成响应"})
         OpenAI.GetChatGPTAnswerNoStream(Value[10:], UserId, MsgId, RecvType, UserId)
+    elif Value[:3] == "buy":
+        ParsedMessage = Value[3:].split("|")
+        SenderId = ParsedMessage[0].strip()
+        ChatType = ParsedMessage[1].strip()
+        OpenApi.sendMessage("3161064", "user", "text", {"text": f"用户{SenderId}需要充值会员, 请及时处理"})
+        OpenApi.sendMessage(SenderId, ChatType, "text", {"text": f"您的充值请求已发送, 请等待管理员处理"})
 
 
 def SetAllUserBoard(contentType: str, content: str):

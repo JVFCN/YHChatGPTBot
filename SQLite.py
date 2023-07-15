@@ -1,13 +1,17 @@
 import ast
 import sqlite3
 import threading
-import OpenAI
+
 import dotenv
+
+import OpenAI
 
 # init
 ThreadLocal = threading.local()
 Connection = sqlite3.connect("data/Yunhu.db")
 Cursor = Connection.cursor()
+ChatInitContent = '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by ' \
+                  'OpenAI.Knowledge cutoff: 2021-09\"}]'
 # 数据库初始化
 Cursor.execute(
     "CREATE TABLE IF NOT EXISTS user_chat_info ("
@@ -15,7 +19,9 @@ Cursor.execute(
     "api_key TEXT NOT NULL DEFAULT 'defaultAPIKEY',"
     "admin BOOLEAN NOT NULL DEFAULT FALSE,"
     "chat TEXT NOT NULL DEFAULT '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]',"
-    "model TEXT NOT NULL DEFAULT 'gpt-3.5-turbo'"
+    "model TEXT NOT NULL DEFAULT 'gpt-3.5-turbo',"
+    "premium BOOLEAN NOT NULL DEFAULT FALSE,"
+    "premium_expire INTEGER NOT NULL DEFAULT 0"
     ")"
 )  # 创建用户聊天信息表
 Connection.commit()
@@ -29,6 +35,43 @@ def GetUserModel(UserId):
     Cursor_.execute("SELECT model FROM user_chat_info WHERE userId=?", (UserId,))  # 获取模型
     result = Cursor_.fetchone()
     return result[0]
+
+
+# 用户是否为会员
+def IsPremium(UserId):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    Cursor_.execute("SELECT premium FROM user_chat_info WHERE userId=?", (UserId,))
+    result = Cursor_.fetchone()
+    return bool(result[0])
+
+
+# 获取用户会员到期时间
+def GetPremiumExpire(UserId):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    Cursor_.execute("SELECT premium_expire FROM user_chat_info WHERE userId=?", (UserId,))
+    result = Cursor_.fetchone()
+    return result[0]
+
+
+# 设置用户会员状态
+def SetPremium(UserId, Premium, ExpireTime):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+    """
+    :param UserId: 用户ID
+    :param Premium: 会员状态
+    :param ExpireTime: 会员到期时间
+    :return: None
+    """
+    Cursor_.execute(
+        "UPDATE user_chat_info SET premium = ?, premium_expire = ? WHERE userId = ?",
+        (Premium, ExpireTime, UserId)
+    )  # 更新会员状态
+    Connection_.commit()
 
 
 # 更改用户的模型
@@ -85,12 +128,8 @@ def AddUser(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
     Cursor_.execute(
-        "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat, model) VALUES (?, ?, ?, ?,?)",
-        (UserId, "defaultAPIKEY", False,
-         '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge '
-         'cutoff: 2021-09\"}]',
-         "gpt-3.5-turbo"
-         )
+        "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat, model, premium, premium_expire) VALUES (?, ?, ?, ?, ?,?, ?)",
+        (UserId, "defaultAPIKEY", False, ChatInitContent, "gpt-3.5-turbo", False, 0)
     )
     Connection_.commit()
 
@@ -128,14 +167,11 @@ def ClearAllUsersChat():
     Cursor_.execute("SELECT userId FROM user_chat_info")
     UserIds = Cursor_.fetchall()
 
-    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by " \
-                     "OpenAI.Knowledge cutoff: 2021-09\"}]"
-
     # 遍历用户ID并清除聊天记录
     for user_id in UserIds:
         Cursor_.execute(
             "UPDATE user_chat_info SET chat = ? WHERE userId = ?",
-            (DefaultContext, user_id[0])
+            (ChatInitContent, user_id[0])
         )
 
     Connection_.commit()
@@ -146,12 +182,9 @@ def ClearUserChat(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
 
-    DefaultContext = "[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by " \
-                     "OpenAI.Knowledge cutoff: 2021-09\"}]"
-
     Cursor_.execute(
         "UPDATE user_chat_info SET chat = ? WHERE userId = ?",
-        (DefaultContext, UserId)
+        (ChatInitContent, UserId)
     )
 
     Connection_.commit()
