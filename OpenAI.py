@@ -90,29 +90,14 @@ openai.api_base = "https://api.mctools.online/v1"
 # 获取ChatGPT的回答
 def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
     if SQLite.GetUserModel(SenderId) == "gpt-4" or SQLite.GetUserModel(SenderId) == "gpt-4-32k":
-        if not SQLite.IsPremium(UserId):
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
-                "text": "您不是高级用户, 无法使用该模型",
-                "buttons": [
-                    [
-                        {
-                            "text": "购买会员",
-                            "actionType": 3,
-                            "value": f"buy{SenderId}|{ChatType}"
-                        }
-                    ]
-                ]
-            })
-            return
-        else:
-            if SQLite.GetPremiumExpire(SenderId) < time.time():
-                SQLite.SetPremium(SenderId, False, 0)
+        if SQLite.GetUserFreeTimes(UserId) <= 0:
+            if not SQLite.IsPremium(UserId):
                 OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
-                    "text": "您的会员已过期, 无法使用该模型",
+                    "text": "您不是高级用户, 无法使用该模型",
                     "buttons": [
                         [
                             {
-                                "text": "续费会员",
+                                "text": "购买会员",
                                 "actionType": 3,
                                 "value": f"buy{SenderId}|{ChatType}"
                             }
@@ -120,54 +105,136 @@ def GetChatGPTAnswerNoStream(Prompt, UserId, MsgId, ChatType, SenderId):
                     ]
                 })
                 return
-    ApiKey = SQLite.GetApiKey(UserId) if ChatType == "user" else SQLite.GetApiKey(SenderId)
-    openai.api_key = DefaultApiKey if ApiKey == "defaultAPIKEY" else ApiKey
-
-    Messages: list = SQLite.GetUserChat(SenderId)  # 获取用户聊天记录
-    Messages.append({"role": "user", "content": Prompt})  # 添加用户输入
-
-    try:
-        Response = openai.ChatCompletion.create(
-            model=SQLite.GetUserModel(SenderId),
-            messages=Messages,
-            temperature=1,
-            stream=False
-        )
-
-        Text = Response["choices"][0]["message"]["content"]
-        OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
-            "text": Text,
-            "buttons": [
-                {
-                    "text": "复制回答",
-                    "actionType": 2,
-                    "value": Text
-                },
-                {
-                    "text": "翻译",
-                    "actionType": 3,
-                    "value": f"fan{Text}"
-                },
-                {
-                    "text": "重新响应",
-                    "actionType": 3,
-                    "value": f"AgainReply{Prompt}"
-                }
-            ]
-        })
-        Messages.append({"role": "assistant", "content": Text})
-        SQLite.UpdateUserChat(SenderId, Messages)
-
-    except openai.error.OpenAIError as e:
-        print(e)
-        if e.http_status == 429:  # 速率限制
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text",
+            else:
+                if SQLite.GetPremiumExpire(SenderId) < time.time():
+                    SQLite.SetPremium(SenderId, False, 0)
+                    OpenApi.editMessage(MsgId, UserId, ChatType, "text", {
+                        "text": "您的会员已过期, 无法使用该模型",
+                        "buttons": [
+                            [
                                 {
-                                    "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
-        elif e.http_status == 401:  # ApiKey错误
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
-        else:  # 未知错误
-            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e.error}"})
+                                    "text": "续费会员",
+                                    "actionType": 3,
+                                    "value": f"buy{SenderId}|{ChatType}"
+                                }
+                            ]
+                        ]
+                    })
+                    return
+                else:
+                    ApiKey = SQLite.GetApiKey(UserId) if ChatType == "user" else SQLite.GetApiKey(SenderId)
+                    if ApiKey == "defaultAPIKEY":
+                        openai.api_key = DefaultApiKey
+                        openai.api_base = "https://api.mctools.online/v1"
+                    else:
+                        openai.api_key = ApiKey
+                        openai.api_base = "https://api.openai.com/v1"
+
+                    Messages: list = SQLite.GetUserChat(SenderId)  # 获取用户聊天记录
+                    Messages.append({"role": "user", "content": Prompt})  # 添加用户输入
+
+                    try:
+                        Response = openai.ChatCompletion.create(
+                            model=SQLite.GetUserModel(SenderId),
+                            messages=Messages,
+                            temperature=1,
+                            stream=False
+                        )
+
+                        Text = Response["choices"][0]["message"]["content"]
+                        OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
+                            "text": Text,
+                            "buttons": [
+                                {
+                                    "text": "复制回答",
+                                    "actionType": 2,
+                                    "value": Text
+                                },
+                                {
+                                    "text": "翻译",
+                                    "actionType": 3,
+                                    "value": f"fan{Text}"
+                                },
+                                {
+                                    "text": "重新响应",
+                                    "actionType": 3,
+                                    "value": f"AgainReply{Prompt}"
+                                }
+                            ]
+                        })
+                        Messages.append({"role": "assistant", "content": Text})
+                        SQLite.UpdateUserChat(SenderId, Messages)
+
+                        if SQLite.GetUserModel(SenderId) == "gpt-4" or SQLite.GetUserModel(SenderId) == "gpt-4-32k":
+                            SQLite.SetUserFreeTimes(UserId, SQLite.GetUserFreeTimes(UserId) - 1)
+
+                    except openai.error.OpenAIError as e:
+                        print(e)
+                        if e.http_status == 429:  # 速率限制
+                            OpenApi.editMessage(MsgId, UserId, ChatType, "text",
+                                                {
+                                                    "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
+                        elif e.http_status == 401:  # ApiKey错误
+                            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
+                        else:  # 未知错误
+                            OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e}"})
+        else:
+            ApiKey = SQLite.GetApiKey(UserId) if ChatType == "user" else SQLite.GetApiKey(SenderId)
+            if ApiKey == "defaultAPIKEY":
+                openai.api_key = DefaultApiKey
+                openai.api_base = "https://api.mctools.online/v1"
+            else:
+                openai.api_key = ApiKey
+                openai.api_base = "https://api.openai.com/v1"
+
+            Messages: list = SQLite.GetUserChat(SenderId)  # 获取用户聊天记录
+            Messages.append({"role": "user", "content": Prompt})  # 添加用户输入
+
+            try:
+                Response = openai.ChatCompletion.create(
+                    model=SQLite.GetUserModel(SenderId),
+                    messages=Messages,
+                    temperature=1,
+                    stream=False
+                )
+
+                Text = Response["choices"][0]["message"]["content"]
+                OpenApi.editMessage(MsgId, UserId, ChatType, "markdown", {
+                    "text": Text,
+                    "buttons": [
+                        {
+                            "text": "复制回答",
+                            "actionType": 2,
+                            "value": Text
+                        },
+                        {
+                            "text": "翻译",
+                            "actionType": 3,
+                            "value": f"fan{Text}"
+                        },
+                        {
+                            "text": "重新响应",
+                            "actionType": 3,
+                            "value": f"AgainReply{Prompt}"
+                        }
+                    ]
+                })
+                Messages.append({"role": "assistant", "content": Text})
+                SQLite.UpdateUserChat(SenderId, Messages)
+
+                if SQLite.GetUserModel(SenderId) == "gpt-4" or SQLite.GetUserModel(SenderId) == "gpt-4-32k":
+                    SQLite.SetUserFreeTimes(UserId, SQLite.GetUserFreeTimes(UserId) - 1)
+
+            except openai.error.OpenAIError as e:
+                print(e)
+                if e.http_status == 429:  # 速率限制
+                    OpenApi.editMessage(MsgId, UserId, ChatType, "text",
+                                        {
+                                            "text": f"ChatGPT速率限制, 请等待几秒后再次提问或者使用私有APIKey解决该问题\n{e.error}"})
+                elif e.http_status == 401:  # ApiKey错误
+                    OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"ApiKey错误\n{e.error}"})
+                else:  # 未知错误
+                    OpenApi.editMessage(MsgId, UserId, ChatType, "text", {"text": f"未知错误, 请重试\n{e}"})
 
 
 # 更改模型

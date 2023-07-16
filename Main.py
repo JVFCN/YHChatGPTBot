@@ -38,7 +38,6 @@ def onMsgInstruction(event):
 
     if CmdId == 348 or CmdName == "设置私有APIKey":
         if ChatType != "group":
-            SQLite.AddUser(SenderId)
             SQLite.UpdateApiKey(SenderId, SenderText)
             OpenApi.sendMessage(SenderId, "user", "text", {"text": "私有APIKey设置成功"})
         else:
@@ -297,6 +296,16 @@ def onMessageNormalHander(event):
                 OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown",
                                     {
                                         "text": f"ID{SenderId}的会员到期时间:{time.strftime('%Y年%m月%d日', time.localtime(int(SQLite.GetPremiumExpire(SenderId))))}"})
+        elif CommandName == "free":
+            if SenderType != "group":
+                OpenApi.sendMessage(SenderId, "user", "markdown",
+                                    {
+                                        "text": f"你的免费次数还剩{SQLite.GetUserFreeTimes(SenderId)}次"})
+            else:
+                OpenApi.sendMessage(event["chat"]["chatId"], "group", "markdown",
+                                    {
+                                        "text": f"ID:{SenderId}的免费次数还剩{SQLite.GetUserFreeTimes(SenderId)}次"})
+            return
         return
     # 处理管理员指令 命令格式:"!命令名字 命令内容"
     if SenderType != "group":
@@ -416,6 +425,10 @@ def onMessageNormalHander(event):
                     UserId = parts[0]
                     Content = parts[1]
                     OpenApi.sendMessage(UserId, "user", "text", {"text": Content})
+            elif CommandName == "CAT":
+                SQLite.SetAllUserFreeTimes(CommandContent)
+                Openapi.sendMessage(SenderId, "user", "text", {"text": f"已设置为{CommandContent}次"})
+                return
     # 群聊中, 如果@的对象是关于ChatGPT的, 则给予回复
     else:
         # 从消息中找到@的对象

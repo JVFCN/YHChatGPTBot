@@ -21,7 +21,8 @@ Cursor.execute(
     "chat TEXT NOT NULL DEFAULT '[{\"role\": \"system\", \"content\": \"You are ChatGPT, a large language model trained by OpenAI.Knowledge cutoff: 2021-09\"}]',"
     "model TEXT NOT NULL DEFAULT 'gpt-3.5-turbo',"
     "premium BOOLEAN NOT NULL DEFAULT FALSE,"
-    "premium_expire INTEGER NOT NULL DEFAULT 0"
+    "premium_expire INTEGER NOT NULL DEFAULT 0,"
+    "free_times INTEGER NOT NULL DEFAULT 10"
     ")"
 )  # 创建用户聊天信息表
 Connection.commit()
@@ -130,6 +131,40 @@ def AddUser(UserId):
     Cursor_.execute(
         "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat, model, premium, premium_expire) VALUES (?, ?, ?, ?, ?,?, ?)",
         (UserId, "defaultAPIKEY", False, ChatInitContent, "gpt-3.5-turbo", False, 0)
+    )
+    Connection_.commit()
+
+
+# 获取用户的免费次数
+def GetUserFreeTimes(UserId):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    Cursor_.execute("SELECT free_times FROM user_chat_info WHERE userId=?", (UserId,))
+    result = Cursor_.fetchone()
+    return result[0]
+
+
+# 更改某用户的免费次数
+def SetUserFreeTimes(UserId, FreeTimes):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    Cursor_.execute(
+        "UPDATE user_chat_info SET free_times = ? WHERE userId = ?",
+        (FreeTimes, UserId)
+    )
+    Connection_.commit()
+
+
+# 更改所有用户的免费次数
+def SetAllUserFreeTimes(FreeTimes):
+    Connection_ = GetDbConnection()
+    Cursor_ = Connection_.cursor()
+
+    Cursor_.execute(
+        "UPDATE user_chat_info SET free_times = ?",
+        (FreeTimes,)
     )
     Connection_.commit()
 
