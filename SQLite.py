@@ -129,8 +129,8 @@ def AddUser(UserId):
     Connection_ = GetDbConnection()
     Cursor_ = Connection_.cursor()
     Cursor_.execute(
-        "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat, model, premium, premium_expire) VALUES (?, ?, ?, ?, ?,?, ?)",
-        (UserId, "defaultAPIKEY", False, ChatInitContent, "gpt-3.5-turbo", False, 0)
+        "INSERT OR IGNORE INTO user_chat_info (userId, api_key, admin, chat, model, premium, premium_expire, free_times) VALUES (?, ?, ?, ?, ?,?, ?,?)",
+        (UserId, "defaultAPIKEY",False ,ChatInitContent, "gpt-3.5-turbo", False, 0, 10)
     )
     Connection_.commit()
 
@@ -142,6 +142,7 @@ def GetUserFreeTimes(UserId):
 
     Cursor_.execute("SELECT free_times FROM user_chat_info WHERE userId=?", (UserId,))
     result = Cursor_.fetchone()
+    print(result)
     return result[0]
 
 

@@ -419,7 +419,7 @@ def onMessageNormalHander(event):
                 else:
                     parts = CommandContent.split("|")
 
-                    if len(parts) != 3:
+                    if len(parts) != 2:
                         OpenApi.sendMessage(SenderId, "user", "text", {"text": "格式错误"})
                         return
                     UserId = parts[0]
@@ -511,6 +511,9 @@ def onButtonReportInlineHandler(event):
         SQLite.SetUserModel(UserId, Value)
         OpenApi.sendMessage(RecvId, RecvType, "text", {"text": "模型已更改"})
     elif Value == "gpt-3.5-turbo-16k":
+        SQLite.SetUserModel(UserId, Value)
+        OpenApi.sendMessage(RecvId, RecvType, "text", {"text": "模型已更改"})
+    elif Value == "gpt-4-32k":
         SQLite.SetUserModel(UserId, Value)
         OpenApi.sendMessage(RecvId, RecvType, "text", {"text": "模型已更改"})
     elif Value[:10] == "AgainReply":
